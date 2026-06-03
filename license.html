@@ -495,7 +495,7 @@
     // ---------- GLOBAL STATE ----------
     let transactions = [];
     let availableLicenses = 100;
-    let mallTypes = [];          // editable mall type strings for TO field
+    let mallTypes = [];
     const ADMIN_PASSWORD = "admin123";
     const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
 
@@ -535,7 +535,7 @@
         renderTable();
         updateStats();
         updateLicenseDisplay();
-        renderMallLibrary();      // updates chips and datalist
+        renderMallLibrary();
         updateRecordCount();
     }
 
@@ -676,28 +676,34 @@
         }
         // attach events dynamically
         document.querySelectorAll('.edit-mall-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const oldVal = btn.getAttribute('data-mall');
-                const newVal = prompt("Edit mall type:", oldVal);
-                if (newVal && newVal.trim() !== "" && newVal !== oldVal) {
-                    const idx = mallTypes.findIndex(m => m === oldVal);
-                    if (idx !== -1) { mallTypes[idx] = newVal.trim(); persistFullState(); renderMallLibrary(); showMessage(`Mall type updated: ${newVal}`, "success"); }
-                } else if (newVal && newVal.trim() === "") { showMessage("Mall type cannot be empty", "error"); }
-            });
+            btn.removeEventListener('click', handleEditMall);
+            btn.addEventListener('click', handleEditMall);
         });
         document.querySelectorAll('.del-mall-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const mallVal = btn.getAttribute('data-mall');
-                if (confirm(`Remove mall type "${mallVal}" from library?`)) {
-                    mallTypes = mallTypes.filter(m => m !== mallVal);
-                    persistFullState();
-                    renderMallLibrary();
-                    showMessage(`Removed "${mallVal}"`, "success");
-                }
-            });
+            btn.removeEventListener('click', handleDeleteMall);
+            btn.addEventListener('click', handleDeleteMall);
         });
+    }
+    
+    function handleEditMall(e) {
+        e.stopPropagation();
+        const oldVal = e.currentTarget.getAttribute('data-mall');
+        const newVal = prompt("Edit mall type:", oldVal);
+        if (newVal && newVal.trim() !== "" && newVal !== oldVal) {
+            const idx = mallTypes.findIndex(m => m === oldVal);
+            if (idx !== -1) { mallTypes[idx] = newVal.trim(); persistFullState(); renderMallLibrary(); showMessage(`Mall type updated: ${newVal}`, "success"); }
+        } else if (newVal && newVal.trim() === "") { showMessage("Mall type cannot be empty", "error"); }
+    }
+    
+    function handleDeleteMall(e) {
+        e.stopPropagation();
+        const mallVal = e.currentTarget.getAttribute('data-mall');
+        if (confirm(`Remove mall type "${mallVal}" from library?`)) {
+            mallTypes = mallTypes.filter(m => m !== mallVal);
+            persistFullState();
+            renderMallLibrary();
+            showMessage(`Removed "${mallVal}"`, "success");
+        }
     }
 
     function addNewMallType() {
@@ -722,7 +728,56 @@
         }
     }
 
-    // ---- Batch, Export, Import (with mallTypes included) ----
+    // ---- FIXED IMPORT FUNCTION ----
+    function importFromJSON(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                console.log("Imported data:", imported); // Debug log
+                
+                // Handle different JSON formats
+                if (imported.transactions !== undefined) {
+                    transactions = imported.transactions;
+                } else if (Array.isArray(imported)) {
+                    transactions = imported;
+                } else {
+                    transactions = [];
+                }
+                
+                // Ensure each transaction has required fields
+                transactions.forEach(t => {
+                    if (!t.remarks) t.remarks = "";
+                    if (!t.allowedFlag) t.allowedFlag = true;
+                    if (!t.statusText) t.statusText = "IMPORTED";
+                    if (!t.timestamp) t.timestamp = new Date().toLocaleString();
+                });
+                
+                if (imported.availableLicenses !== undefined) {
+                    availableLicenses = imported.availableLicenses;
+                }
+                
+                if (imported.mallTypes && Array.isArray(imported.mallTypes)) {
+                    mallTypes = imported.mallTypes;
+                } else if (!mallTypes.length) {
+                    mallTypes = [...DEFAULT_MALLS];
+                }
+                
+                persistFullState();
+                renderUI();
+                showMessage(`✅ Import successful! ${transactions.length} records, ${mallTypes.length} mall types, ${availableLicenses} licenses.`, "success");
+            } catch(error) {
+                console.error("Import error:", error);
+                showMessage(`❌ Error parsing JSON file: ${error.message}`, "error");
+            }
+        };
+        reader.onerror = function() {
+            showMessage("❌ Error reading file", "error");
+        };
+        reader.readAsText(file);
+    }
+
+    // ---- Batch, Export ----
     function exportToJSON() {
         const dataToExport = {
             transactions: transactions,
@@ -741,25 +796,6 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showMessage("✅ Full data (transactions, licenses, mall types) exported!", "success");
-    }
-
-    function importFromJSON(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (imported.transactions !== undefined) transactions = imported.transactions;
-                else if (Array.isArray(imported)) transactions = imported;
-                else transactions = [];
-                if (imported.availableLicenses !== undefined) availableLicenses = imported.availableLicenses;
-                if (imported.mallTypes && Array.isArray(imported.mallTypes)) mallTypes = imported.mallTypes;
-                else if (!mallTypes.length) mallTypes = [...DEFAULT_MALLS];
-                persistFullState();
-                renderUI();
-                showMessage(`✅ Import successful! ${transactions.length} records, ${mallTypes.length} mall types, ${availableLicenses} licenses.`, "success");
-            } catch(error) { showMessage("❌ Error parsing JSON file", "error"); }
-        };
-        reader.readAsText(file);
     }
 
     function processBatchUpload(file) {
@@ -811,7 +847,7 @@
         if (!transactions.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">📭 No transactions yet. Add your first transfer!</td></tr>'; return; }
         let html = "";
         for (const t of transactions) {
-            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText.includes("DUPLICATE") ? "status-warning" : "status-allowed");
+            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText && t.statusText.includes("DUPLICATE") ? "status-warning" : "status-allowed");
             const tagDisplay = t.tag === "new_license" ? "✨ NEW LICENSE" : "🔄 TRANSFER";
             const fromUsedDisplay = t.tag === "transfer" ? (t.fromUsedBefore || "NO") : "—";
             html += `<tr>
@@ -820,7 +856,7 @@
                 <td>${tagDisplay}</td>
                 <td style="font-size:0.7rem;">${fromUsedDisplay}</td>
                 <td style="font-size:0.7rem;">${escapeHtml(t.timestamp)}</td>
-                <td><span class="status-badge ${statusClass}">${escapeHtml(t.statusText)}</span></td>
+                <td><span class="status-badge ${statusClass}">${escapeHtml(t.statusText || "UNKNOWN")}</span></td>
                 <td>${escapeHtml(t.remarks) || '<em style="color:#6c7a96;">—</em>'}</td>
                 <td class="action-icons">
                     <button class="small secondary" onclick="editRemarks('${t.id}')">✏️</button>
@@ -837,7 +873,7 @@
     function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     function escapeAttr(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-    // ---- EVENT LISTENERS ----
+    // ---- FIXED EVENT LISTENERS ----
     document.getElementById("executeBtn")?.addEventListener("click", () => {
         const from = document.getElementById("fromCode").value;
         const to = document.getElementById("toCode").value;
@@ -847,16 +883,41 @@
         document.getElementById("fromCode").value = "";
         document.getElementById("toCode").value = "";
     });
+    
     document.getElementById("resetBtn")?.addEventListener("click", resetDatabase);
     document.getElementById("exportBtn")?.addEventListener("click", exportToJSON);
     document.getElementById("editLicenseBtn")?.addEventListener("click", editLicenseCount);
-    document.getElementById("importBtn")?.addEventListener("click", () => document.getElementById("importFile").click());
-    document.getElementById("importFile")?.addEventListener("change", (e) => { if (e.target.files[0]) importFromJSON(e.target.files[0]); e.target.value = ""; });
-    document.getElementById("uploadBtn")?.addEventListener("click", () => { const file = document.getElementById("uploadFile").files[0]; if (file) processBatchUpload(file); else showMessage("Select a file", "error"); document.getElementById("uploadFile").value = ""; });
+    
+    // FIXED: Better import button handler
+    const importBtn = document.getElementById("importBtn");
+    const importFile = document.getElementById("importFile");
+    
+    importBtn?.addEventListener("click", () => {
+        importFile.click();
+    });
+    
+    importFile?.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            console.log("Importing file:", file.name);
+            importFromJSON(file);
+            e.target.value = ""; // Reset file input
+        }
+    });
+    
+    document.getElementById("uploadBtn")?.addEventListener("click", () => { 
+        const file = document.getElementById("uploadFile").files[0]; 
+        if (file) processBatchUpload(file); 
+        else showMessage("Select a file", "error"); 
+        document.getElementById("uploadFile").value = ""; 
+    });
+    
     document.getElementById("addMallTypeBtn")?.addEventListener("click", addNewMallType);
     document.getElementById("resetMallDefaultsBtn")?.addEventListener("click", resetMallDefaults);
+    
     window.editRemarks = editRemarks;
     window.deleteWithPassword = deleteWithPassword;
+    
     loadData();
 </script>
 </body>
