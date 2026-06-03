@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Mall Type Selection + Filtering</title>
+    <title>Terminal License Monitor · Separate Mall Type Management</title>
     <style>
         * {
             box-sizing: border-box;
@@ -96,7 +96,7 @@
             margin-bottom: 0.4rem;
         }
 
-        .terminal-input, .filter-input, .filter-select {
+        .terminal-input, .mall-select-input {
             width: 100%;
             background: #03050b;
             border: 1px solid #2a2f42;
@@ -108,27 +108,9 @@
             outline: none;
         }
 
-        .terminal-input:focus, .filter-input:focus, .filter-select:focus {
+        .terminal-input:focus, .mall-select-input:focus {
             border-color: #2ecc71;
             box-shadow: 0 0 0 3px #2ecc7122;
-        }
-
-        .filter-input, .filter-select {
-            font-size: 0.85rem;
-            padding: 0.5rem 0.8rem;
-        }
-
-        .filter-select {
-            cursor: pointer;
-        }
-
-        .mall-suggest {
-            margin-top: 0.3rem;
-            font-size: 0.7rem;
-            color: #6c7a96;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         .radio-group {
@@ -288,6 +270,8 @@
             flex-wrap: wrap;
             gap: 8px;
             margin: 12px 0 8px 0;
+            max-height: 120px;
+            overflow-y: auto;
         }
 
         .mall-chip {
@@ -301,17 +285,6 @@
             gap: 8px;
             border: 1px solid #2ecc7166;
             color: #b9f6ca;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .mall-chip:hover {
-            background: #2ecc7133;
-            transform: scale(1.02);
-        }
-
-        .mall-chip .mall-name {
-            cursor: pointer;
         }
 
         .mall-chip button {
@@ -418,6 +391,17 @@
             text-transform: uppercase;
         }
 
+        .filter-input, .filter-select {
+            width: 100%;
+            background: #03050b;
+            border: 1px solid #2a2f42;
+            padding: 0.5rem 0.8rem;
+            border-radius: 0.8rem;
+            font-size: 0.85rem;
+            color: #b3f0c0;
+            outline: none;
+        }
+
         .filter-actions {
             display: flex;
             gap: 0.5rem;
@@ -434,19 +418,99 @@
             text-align: center;
         }
 
-        .click-hint {
-            font-size: 0.65rem;
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #0e1120;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 2px solid #2ecc71;
+            border-radius: 1.5rem;
+            width: 90%;
+            max-width: 500px;
+            color: #ccd6f0;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #2ecc7133;
+            padding-bottom: 0.5rem;
+        }
+
+        .modal-header h2 {
+            margin: 0;
             color: #2ecc71;
-            margin-top: 0.3rem;
-            text-align: center;
+        }
+
+        .close {
+            color: #ff6b6b;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #ff0000;
+        }
+
+        .mall-list-modal {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 1rem 0;
+        }
+
+        .mall-item-modal {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: #1a1f2e;
+            border-radius: 0.5rem;
+        }
+
+        .mall-item-modal span {
+            font-family: monospace;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: #03050b;
+            border: 1px solid #2a2f42;
+            padding: 0.7rem;
+            border-radius: 0.8rem;
+            font-size: 0.9rem;
+            color: #b3f0c0;
+            margin: 0.5rem 0;
+        }
+
+        .edit-mode-badge {
+            font-size: 0.7rem;
+            color: #ffaa88;
+            margin-left: 0.5rem;
         }
     </style>
 </head>
 <body>
 <div class="monitor-container">
     <div class="terminal-header">
-        <div class="title">⟡ LICENSE TRANSFER MONITOR · MALL TYPE SELECTION + FILTERS ⟡</div>
-        <div class="badge">Click any mall type → fills TO field | Advanced filtering</div>
+        <div class="title">⟡ LICENSE TRANSFER MONITOR · SEPARATE MALL TYPE ⟡</div>
+        <div class="badge">TO Terminal + Mall Type (independent) | Edit mall list via modal</div>
     </div>
 
     <div class="grid-2col">
@@ -455,35 +519,32 @@
             <div class="license-counter">
                 <div class="license-number" id="licenseCount">0</div>
                 <div class="license-label">NEW LICENSE REMAINING</div>
-                <button id="editLicenseBtn" class="edit-license-btn" style="background:#1e2f2a; margin-top: 6px;">✏️ EDIT LICENSE COUNT (Password)</button>
+                <button id="editLicenseBtn" class="edit-license-btn" style="background:#1e2f2a; margin-top: 6px;">✏️ EDIT LICENSE COUNT</button>
                 <div class="license-label" style="margin-top: 0.5rem; font-size: 0.7rem;" id="licenseStatus"></div>
             </div>
 
             <!-- FROM Terminal -->
             <div class="form-group">
                 <label>📡 FROM TERMINAL CODE</label>
-                <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2" autocomplete="off">
+                <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2">
             </div>
             
-            <!-- TO Terminal with Mall Type selection -->
+            <!-- TO Terminal (separate field) -->
             <div class="form-group">
                 <label>🎯 TO TERMINAL CODE</label>
-                <input type="text" id="toCode" class="terminal-input" list="mallTypesDatalist" placeholder="Click a mall type below or type manually" autocomplete="off">
-                <datalist id="mallTypesDatalist"></datalist>
-                <div class="click-hint">👇 Click any mall type below to auto-fill TO field 👇</div>
+                <input type="text" id="toCode" class="terminal-input" placeholder="e.g., TERM-YYYY-C3D4">
             </div>
 
-            <!-- MALL TYPE LIBRARY - CLICKABLE CHIPS -->
-            <div class="mall-library">
-                <div class="mall-header">
-                    <span>🏬 MALL TYPES LIBRARY (click to fill TO field)</span>
-                    <button id="addMallTypeBtn" class="btn-icon" style="background:#2c3e2f;">➕ ADD NEW</button>
+            <!-- MALL TYPE (separate field with dropdown) -->
+            <div class="form-group">
+                <label>🏬 MALL TYPE (separate attribute)</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="mallTypeSelect" class="mall-select-input" style="flex: 2;">
+                        <option value="">-- Select Mall Type --</option>
+                    </select>
+                    <button id="manageMallTypesBtn" class="btn-icon" style="background:#2c3e2f; white-space: nowrap;">✏️ Manage Mall List</button>
                 </div>
-                <div id="mallTypesContainer" class="mall-badge-list"></div>
-                <div class="mall-actions">
-                    <button id="resetMallDefaultsBtn" class="btn-icon secondary">⟳ Reset defaults</button>
-                    <small style="color:#6c7a96;">✏️ edit | 🗑️ delete | 📌 click name → fills TO field</small>
-                </div>
+                <div class="note" style="margin-top: 0.3rem;">💡 Select a mall type from the dropdown above</div>
             </div>
 
             <!-- License Action -->
@@ -515,7 +576,7 @@
                     <button id="fullRestoreBtn" class="secondary">📂 RESTORE FROM BACKUP</button>
                 </div>
                 <input type="file" id="restoreFile" accept=".json" style="display: none;">
-                <div class="note">💾 Backup includes: All transactions + License count + Mall types</div>
+                <div class="note">💾 Backup includes: Transactions + License count + Mall types</div>
             </div>
 
             <!-- Export/Import -->
@@ -530,14 +591,15 @@
 
             <!-- Batch Upload -->
             <div class="upload-area">
-                <label>📁 BATCH UPLOAD (CSV/JSON)</label>
+                <label>📁 BATCH UPLOAD (CSV)</label>
                 <input type="file" id="uploadFile" accept=".csv,.json" class="file-input">
                 <button id="uploadBtn" class="secondary" style="margin-top: 0.5rem; width: 100%;">📤 UPLOAD & PROCESS</button>
             </div>
 
             <div id="messageArea" class="alert" style="display: none;"></div>
             <div class="note">
-                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license
+                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license<br>
+                📌 Mall type is recorded separately from TO terminal
             </div>
         </div>
 
@@ -556,7 +618,7 @@
                             <option value="ALL">All Statuses</option>
                             <option value="ALLOWED">✓ Allowed</option>
                             <option value="DENIED">✗ Denied</option>
-                            <option value="WARNING">⚠️ Warning/Duplicate</option>
+                            <option value="WARNING">⚠️ Warning</option>
                         </select>
                     </div>
                     <div>
@@ -568,18 +630,22 @@
                         </select>
                     </div>
                     <div>
-                        <div class="filter-label">📝 Filter by REMARKS</div>
-                        <input type="text" id="filterRemarks" class="filter-input" placeholder="Search in remarks...">
+                        <div class="filter-label">🏬 Filter by MALL TYPE</div>
+                        <input type="text" id="filterMallType" class="filter-input" placeholder="Mall type contains...">
                     </div>
                 </div>
                 <div class="filter-row">
                     <div>
+                        <div class="filter-label">📝 Filter by REMARKS</div>
+                        <input type="text" id="filterRemarks" class="filter-input" placeholder="Search in remarks...">
+                    </div>
+                    <div>
                         <div class="filter-label">📡 Filter by FROM TERMINAL</div>
-                        <input type="text" id="filterFrom" class="filter-input" placeholder="FROM code contains...">
+                        <input type="text" id="filterFrom" class="filter-input" placeholder="FROM code...">
                     </div>
                     <div>
                         <div class="filter-label">🎯 Filter by TO TERMINAL</div>
-                        <input type="text" id="filterTo" class="filter-input" placeholder="TO code contains...">
+                        <input type="text" id="filterTo" class="filter-input" placeholder="TO code...">
                     </div>
                 </div>
                 <div class="filter-actions">
@@ -590,23 +656,37 @@
             </div>
 
             <div class="scroll-table">
-                <table>
+                <table id="dataTable">
                     <thead>
                         <tr>
-                            <th>FROM</th>
-                            <th>TO</th>
-                            <th>Tag</th>
-                            <th>FROM Used Before?</th>
-                            <th>Timestamp</th>
-                            <th>Status</th>
-                            <th>Remarks</th>
-                            <th>Actions</th>
+                            <th>FROM</th><th>TO</th><th>🏬 MALL TYPE</th><th>Tag</th><th>FROM Used Before?</th><th>Timestamp</th><th>Status</th><th>Remarks</th><th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- MODAL for Mall Type Management -->
+<div id="mallModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🏬 Manage Mall Types</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="mall-list-modal" id="mallListModal">
+            <!-- Dynamic mall list will appear here -->
+        </div>
+        <div style="margin-top: 1rem;">
+            <input type="text" id="newMallName" class="modal-input" placeholder="Enter new mall type...">
+            <div class="button-group" style="margin-top: 0.5rem;">
+                <button id="addMallModalBtn" class="primary" style="flex:1;">➕ Add Mall Type</button>
+                <button id="closeModalBtn" class="secondary" style="flex:1;">Close</button>
+            </div>
+        </div>
+        <div class="note" style="margin-top: 1rem;">💡 Click ✏️ to edit, 🗑️ to delete. Changes auto-save.</div>
     </div>
 </div>
 
@@ -620,20 +700,17 @@
         tag: "ALL",
         remarks: "",
         fromCode: "",
-        toCode: ""
+        toCode: "",
+        mallType: ""
     };
     
     const ADMIN_PASSWORD = "admin123";
     const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
 
     function persistFullState() {
-        const dataToSave = {
-            transactions: transactions,
-            availableLicenses: availableLicenses,
-            mallTypes: mallTypes,
-            lastBackup: new Date().toISOString()
-        };
-        localStorage.setItem("terminal_license_monitor", JSON.stringify(dataToSave));
+        localStorage.setItem("terminal_license_monitor", JSON.stringify({
+            transactions, availableLicenses, mallTypes, lastBackup: new Date().toISOString()
+        }));
     }
 
     function loadData() {
@@ -643,14 +720,13 @@
                 const parsed = JSON.parse(stored);
                 transactions = parsed.transactions || [];
                 availableLicenses = parsed.availableLicenses !== undefined ? parsed.availableLicenses : 100;
-                mallTypes = parsed.mallTypes && Array.isArray(parsed.mallTypes) ? parsed.mallTypes : [...DEFAULT_MALLS];
+                mallTypes = parsed.mallTypes || [...DEFAULT_MALLS];
                 transactions.forEach(t => { 
                     if (!t.remarks) t.remarks = "";
+                    if (!t.mallType) t.mallType = "";
                     if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
                 });
-            } catch(e) { 
-                resetToDefaults();
-            }
+            } catch(e) { resetToDefaults(); }
         } else {
             resetToDefaults();
         }
@@ -664,12 +740,96 @@
     }
 
     function renderUI() {
+        renderMallSelect();
         renderFilteredTable();
         updateStats();
         updateLicenseDisplay();
-        renderMallLibrary();
         updateRecordCount();
         persistFullState();
+    }
+
+    function renderMallSelect() {
+        const select = document.getElementById("mallTypeSelect");
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select Mall Type --</option>';
+        mallTypes.forEach(mall => {
+            select.innerHTML += `<option value="${escapeAttr(mall)}">${escapeHtml(mall)}</option>`;
+        });
+    }
+
+    function renderModalMallList() {
+        const container = document.getElementById("mallListModal");
+        if (!container) return;
+        if (!mallTypes.length) {
+            container.innerHTML = '<div style="text-align:center; color:#7e8aa2; padding:1rem;">No mall types. Add one above!</div>';
+            return;
+        }
+        container.innerHTML = mallTypes.map((mall, idx) => `
+            <div class="mall-item-modal">
+                <span>${escapeHtml(mall)}</span>
+                <div>
+                    <button class="small secondary edit-modal-mall" data-mall="${escapeAttr(mall)}" data-index="${idx}" style="margin-right:5px;">✏️ Edit</button>
+                    <button class="small danger delete-modal-mall" data-mall="${escapeAttr(mall)}" data-index="${idx}">🗑️ Delete</button>
+                </div>
+            </div>
+        `).join("");
+        
+        // Add event listeners for edit/delete in modal
+        document.querySelectorAll('.edit-modal-mall').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const oldVal = btn.getAttribute('data-mall');
+                const newVal = prompt("Edit mall type:", oldVal);
+                if (newVal && newVal.trim() !== "" && newVal !== oldVal) {
+                    const idx = mallTypes.findIndex(m => m === oldVal);
+                    if (idx !== -1) { 
+                        mallTypes[idx] = newVal.trim();
+                        // Also update any transactions that had this mall type
+                        transactions.forEach(t => { if (t.mallType === oldVal) t.mallType = newVal.trim(); });
+                        renderUI();
+                        showMessage(`Mall type updated: ${newVal}`, "success");
+                    }
+                }
+            };
+        });
+        document.querySelectorAll('.delete-modal-mall').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const mallVal = btn.getAttribute('data-mall');
+                if (confirm(`Remove mall type "${mallVal}"? This will clear it from existing transactions.`)) {
+                    mallTypes = mallTypes.filter(m => m !== mallVal);
+                    // Clear this mall type from transactions
+                    transactions.forEach(t => { if (t.mallType === mallVal) t.mallType = ""; });
+                    renderUI();
+                    showMessage(`Removed "${mallVal}"`, "success");
+                }
+            };
+        });
+    }
+
+    function openMallModal() {
+        renderModalMallList();
+        document.getElementById("mallModal").style.display = "block";
+    }
+
+    function closeMallModal() {
+        document.getElementById("mallModal").style.display = "none";
+        document.getElementById("newMallName").value = "";
+    }
+
+    function addMallFromModal() {
+        const newMall = document.getElementById("newMallName").value.trim();
+        if (newMall && !mallTypes.includes(newMall)) {
+            mallTypes.push(newMall);
+            renderUI();
+            renderModalMallList();
+            document.getElementById("newMallName").value = "";
+            showMessage(`Added "${newMall}" to mall types`, "success");
+        } else if (newMall && mallTypes.includes(newMall)) {
+            showMessage("Mall type already exists!", "error");
+        } else if (newMall === "") {
+            showMessage("Please enter a mall type name", "error");
+        }
     }
 
     function getStatusCategory(statusText) {
@@ -685,6 +845,7 @@
         currentFilters.remarks = document.getElementById("filterRemarks").value.toLowerCase();
         currentFilters.fromCode = document.getElementById("filterFrom").value.toLowerCase();
         currentFilters.toCode = document.getElementById("filterTo").value.toLowerCase();
+        currentFilters.mallType = document.getElementById("filterMallType").value.toLowerCase();
         renderFilteredTable();
         updateFilterStats();
     }
@@ -695,13 +856,8 @@
         document.getElementById("filterRemarks").value = "";
         document.getElementById("filterFrom").value = "";
         document.getElementById("filterTo").value = "";
-        currentFilters = {
-            status: "ALL",
-            tag: "ALL",
-            remarks: "",
-            fromCode: "",
-            toCode: ""
-        };
+        document.getElementById("filterMallType").value = "";
+        currentFilters = { status: "ALL", tag: "ALL", remarks: "", fromCode: "", toCode: "", mallType: "" };
         renderFilteredTable();
         updateFilterStats();
         showMessage("All filters cleared", "success");
@@ -719,47 +875,32 @@
 
     function getFilteredTransactions() {
         let filtered = [...transactions];
-        
-        if (currentFilters.status !== "ALL") {
-            filtered = filtered.filter(t => getStatusCategory(t.statusText) === currentFilters.status);
-        }
-        
-        if (currentFilters.tag !== "ALL") {
-            filtered = filtered.filter(t => t.tag === currentFilters.tag);
-        }
-        
-        if (currentFilters.remarks) {
-            filtered = filtered.filter(t => t.remarks.toLowerCase().includes(currentFilters.remarks));
-        }
-        
-        if (currentFilters.fromCode) {
-            filtered = filtered.filter(t => t.fromCode.toLowerCase().includes(currentFilters.fromCode));
-        }
-        
-        if (currentFilters.toCode) {
-            filtered = filtered.filter(t => t.toCode.toLowerCase().includes(currentFilters.toCode));
-        }
-        
+        if (currentFilters.status !== "ALL") filtered = filtered.filter(t => getStatusCategory(t.statusText) === currentFilters.status);
+        if (currentFilters.tag !== "ALL") filtered = filtered.filter(t => t.tag === currentFilters.tag);
+        if (currentFilters.remarks) filtered = filtered.filter(t => t.remarks.toLowerCase().includes(currentFilters.remarks));
+        if (currentFilters.fromCode) filtered = filtered.filter(t => t.fromCode.toLowerCase().includes(currentFilters.fromCode));
+        if (currentFilters.toCode) filtered = filtered.filter(t => t.toCode.toLowerCase().includes(currentFilters.toCode));
+        if (currentFilters.mallType) filtered = filtered.filter(t => (t.mallType || "").toLowerCase().includes(currentFilters.mallType));
         return filtered;
     }
 
     function renderFilteredTable() {
         const tbody = document.getElementById("tableBody");
         const filtered = getFilteredTransactions();
-        
         if (!filtered.length) { 
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">📭 No transactions match the filters</td></tr>'; 
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">📭 No transactions match the filters</td></tr>'; 
             return; 
         }
-        
         let html = "";
         for (const t of filtered) {
-            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText && t.statusText.includes("DUPLICATE") ? "status-warning" : "status-allowed");
+            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText?.includes("DUPLICATE") ? "status-warning" : "status-allowed");
             const tagDisplay = t.tag === "new_license" ? "✨ NEW LICENSE" : "🔄 TRANSFER";
             const fromUsedDisplay = t.tag === "transfer" ? (t.fromUsedBefore || "NO") : "—";
+            const mallDisplay = t.mallType ? escapeHtml(t.mallType) : "—";
             html += `<tr>
                 <td><code><strong>${escapeHtml(t.fromCode)}</strong></code></td>
                 <td><code>${escapeHtml(t.toCode)}</code></td>
+                <td>${mallDisplay}</td>
                 <td>${tagDisplay}</td>
                 <td style="font-size:0.7rem;">${fromUsedDisplay}</td>
                 <td style="font-size:0.7rem;">${escapeHtml(t.timestamp)}</td>
@@ -777,12 +918,10 @@
     function updateRecordCount() {
         const filtered = getFilteredTransactions();
         const recordSpan = document.getElementById("recordCount");
-        if (recordSpan) {
-            if (filtered.length === transactions.length) {
-                recordSpan.textContent = transactions.length + " records";
-            } else {
-                recordSpan.textContent = filtered.length + " / " + transactions.length + " records";
-            }
+        if (filtered.length === transactions.length) {
+            recordSpan.textContent = transactions.length + " records";
+        } else {
+            recordSpan.textContent = filtered.length + " / " + transactions.length + " records";
         }
     }
 
@@ -800,13 +939,10 @@
         const licenseStatus = document.getElementById("licenseStatus");
         if (availableLicenses <= 10 && availableLicenses > 0) {
             licenseStatus.innerHTML = "⚠️ LOW LICENSES! Only " + availableLicenses + " NEW licenses left";
-            licenseStatus.style.color = "#ffaa88";
         } else if (availableLicenses <= 0) {
             licenseStatus.innerHTML = "❌ NO NEW LICENSES LEFT! Add more to use NEW LICENSE tag.";
-            licenseStatus.style.color = "#ff6b6b";
         } else {
             licenseStatus.innerHTML = "✅ " + availableLicenses + " NEW licenses available";
-            licenseStatus.style.color = "#8e9baf";
         }
     }
 
@@ -823,184 +959,64 @@
     function evaluateTransaction(fromCode, toCode, tag) {
         const fNorm = fromCode.trim();
         const tNorm = toCode.trim();
-        if (fNorm === "" || tNorm === "") return { allowed: false, message: "❌ Terminal codes cannot be empty!", statusLabel: "INVALID INPUT" };
-        if (fNorm === tNorm) return { allowed: false, message: "🚫 FROM cannot be same as TO", statusLabel: "SAME CODE ERROR" };
+        if (!fNorm || !tNorm) return { allowed: false, message: "Empty FROM or TO", statusLabel: "INVALID INPUT" };
+        if (fNorm === tNorm) return { allowed: false, message: "FROM cannot be same as TO", statusLabel: "SAME CODE" };
         const fromUsedBefore = isFromTerminalUsed(fNorm);
         const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
-        
         if (tag === "new_license") {
-            if (availableLicenses <= 0) return { allowed: false, message: "❌ NO NEW LICENSES AVAILABLE!", statusLabel: "NO LICENSES" };
-            return { allowed: true, message: duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved", statusLabel: duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)" };
-        } else if (tag === "transfer") {
-            if (fromUsedBefore) return { allowed: false, message: `⛔ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer before.`, statusLabel: "⛔ NOT ALLOWED (FROM USED)" };
-            return { allowed: true, message: duplicateExists ? "⚠️ Duplicate but first transfer for FROM terminal" : "✅ TRANSFER allowed (no license cost)", statusLabel: duplicateExists ? "⚠️ DUPLICATE (TRANSFER)" : "✓ ALLOWED (TRANSFER)" };
+            if (availableLicenses <= 0) return { allowed: false, message: "No NEW licenses", statusLabel: "NO LICENSES" };
+            return { allowed: true, message: duplicateExists ? "Duplicate, approved" : "NEW LICENSE approved", statusLabel: duplicateExists ? "⚠️ DUPLICATE" : "✓ ALLOWED" };
+        } else {
+            if (fromUsedBefore) return { allowed: false, message: `FROM "${fNorm}" already used`, statusLabel: "FROM USED" };
+            return { allowed: true, message: duplicateExists ? "Duplicate, but allowed" : "TRANSFER allowed", statusLabel: duplicateExists ? "⚠️ DUPLICATE" : "✓ ALLOWED" };
         }
-        return { allowed: false, message: "Invalid tag", statusLabel: "ERROR" };
     }
 
-    function addTransaction(fromCode, toCode, tag, showMessageFlag = true) {
+    function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
         const evalResult = evaluateTransaction(fromCode, toCode, tag);
-        let licenseConsumed = 0;
-        if (evalResult.allowed && tag === "new_license") {
-            if (availableLicenses > 0) { availableLicenses--; licenseConsumed = 1; }
-            else { evalResult.allowed = false; evalResult.message = "❌ No NEW licenses left!"; evalResult.statusLabel = "NO LICENSES"; }
-        }
+        let consumed = 0;
+        if (evalResult.allowed && tag === "new_license") { availableLicenses--; consumed = 1; }
         const newRecord = {
             id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
             fromCode: fromCode.trim(),
             toCode: toCode.trim(),
+            mallType: mallType || "",
             tag: tag,
             fromUsedBefore: tag === "transfer" ? (isFromTerminalUsed(fromCode.trim()) ? "YES" : "NO") : "N/A",
             timestamp: new Date().toLocaleString(),
             statusText: evalResult.statusLabel,
             allowedFlag: evalResult.allowed,
             remarks: "",
-            licenseConsumed: licenseConsumed
+            licenseConsumed: consumed
         };
         transactions.unshift(newRecord);
-        if (showMessageFlag) {
-            if (evalResult.allowed) showMessage(`✔️ SUCCESS: ${evalResult.message}`, "success");
-            else showMessage(`❌ BLOCKED: ${evalResult.message}`, "error");
-        }
+        if (showMsg) showMessage(evalResult.allowed ? `✔️ ${evalResult.message}` : `❌ ${evalResult.message}`, evalResult.allowed ? "success" : "error");
         renderUI();
         return evalResult;
     }
 
     function deleteTransaction(id) {
-        const transaction = transactions.find(t => t.id === id);
-        if (transaction && transaction.allowedFlag && transaction.tag === "new_license") availableLicenses++;
-        transactions = transactions.filter(t => t.id !== id);
+        const t = transactions.find(x => x.id === id);
+        if (t && t.allowedFlag && t.tag === "new_license") availableLicenses++;
+        transactions = transactions.filter(x => x.id !== id);
         renderUI();
-        showMessage("✅ Transaction deleted (license refunded if applicable)", "success");
+        showMessage("Transaction deleted (license refunded if applicable)", "success");
     }
 
     function updateRemarks(id, remarks) {
-        const transaction = transactions.find(t => t.id === id);
-        if (transaction) { transaction.remarks = remarks; renderUI(); showMessage("✅ Remarks updated", "success"); }
-    }
-
-    // MALL TYPES MANAGEMENT with CLICK TO FILL TO FIELD
-    function renderMallLibrary() {
-        const container = document.getElementById("mallTypesContainer");
-        if (!container) return;
-        
-        if (!mallTypes.length) { 
-            container.innerHTML = '<span style="color:#7e8aa2;">✨ No mall types, click "+ ADD NEW"</span>'; 
-        } else {
-            container.innerHTML = mallTypes.map((mall, idx) => `
-                <div class="mall-chip" data-mall-value="${escapeAttr(mall)}">
-                    <span class="mall-name">${escapeHtml(mall)}</span>
-                    <button class="edit-mall-btn" data-mall="${escapeAttr(mall)}" data-index="${idx}" title="Edit">✏️</button>
-                    <button class="del-mall-btn" data-mall="${escapeAttr(mall)}" data-index="${idx}" title="Delete">🗑️</button>
-                </div>
-            `).join("");
-        }
-        
-        // Update datalist for autocomplete
-        const datalist = document.getElementById("mallTypesDatalist");
-        if (datalist) {
-            datalist.innerHTML = mallTypes.map(m => `<option value="${escapeAttr(m)}">`).join('');
-        }
-        
-        // Add click event to the whole chip to fill TO field
-        document.querySelectorAll('.mall-chip').forEach(chip => {
-            chip.removeEventListener('click', chipClickHandler);
-            chip.addEventListener('click', chipClickHandler);
-        });
-        
-        // Edit buttons
-        document.querySelectorAll('.edit-mall-btn').forEach(btn => {
-            btn.removeEventListener('click', handleEditMall);
-            btn.addEventListener('click', handleEditMall);
-        });
-        
-        // Delete buttons
-        document.querySelectorAll('.del-mall-btn').forEach(btn => {
-            btn.removeEventListener('click', handleDeleteMall);
-            btn.addEventListener('click', handleDeleteMall);
-        });
-    }
-    
-    function chipClickHandler(e) {
-        // Don't trigger if clicking on edit/delete buttons
-        if (e.target.classList.contains('edit-mall-btn') || e.target.classList.contains('del-mall-btn')) {
-            return;
-        }
-        const mallValue = e.currentTarget.getAttribute('data-mall-value');
-        if (mallValue) {
-            document.getElementById("toCode").value = mallValue;
-            showMessage(`✓ Mall type "${mallValue}" added to TO field`, "success");
-            // Highlight effect
-            e.currentTarget.style.transform = "scale(1.05)";
-            setTimeout(() => {
-                e.currentTarget.style.transform = "";
-            }, 200);
-        }
-    }
-    
-    function handleEditMall(e) {
-        e.stopPropagation();
-        const oldVal = e.currentTarget.getAttribute('data-mall');
-        const newVal = prompt("Edit mall type:", oldVal);
-        if (newVal && newVal.trim() !== "" && newVal !== oldVal) {
-            const idx = mallTypes.findIndex(m => m === oldVal);
-            if (idx !== -1) { 
-                mallTypes[idx] = newVal.trim(); 
-                renderUI(); 
-                showMessage(`Mall type updated: ${newVal}`, "success"); 
-            }
-        } else if (newVal && newVal.trim() === "") { 
-            showMessage("Mall type cannot be empty", "error"); 
-        }
-    }
-    
-    function handleDeleteMall(e) {
-        e.stopPropagation();
-        const mallVal = e.currentTarget.getAttribute('data-mall');
-        if (confirm(`Remove mall type "${mallVal}" from library?`)) {
-            mallTypes = mallTypes.filter(m => m !== mallVal);
-            renderUI();
-            showMessage(`Removed "${mallVal}"`, "success");
-        }
-    }
-
-    function addNewMallType() {
-        let newMall = prompt("Enter new mall type:");
-        if (newMall && newMall.trim() !== "") {
-            newMall = newMall.trim();
-            if (!mallTypes.includes(newMall)) {
-                mallTypes.push(newMall);
-                renderUI();
-                showMessage(`➕ Mall type "${newMall}" added - click it to use!`, "success");
-            } else { showMessage("Already exists!", "error"); }
-        }
-    }
-
-    function resetMallDefaults() {
-        if (confirm("Reset mall types to defaults?")) {
-            mallTypes = [...DEFAULT_MALLS];
-            renderUI();
-            showMessage("🏬 Mall types reset to defaults", "success");
-        }
+        const t = transactions.find(x => x.id === id);
+        if (t) { t.remarks = remarks; renderUI(); showMessage("Remarks saved", "success"); }
     }
 
     // BACKUP FUNCTIONS
     function fullBackup() {
-        const backupData = {
-            version: "1.0",
-            backupDate: new Date().toISOString(),
-            transactions: transactions,
-            availableLicenses: availableLicenses,
-            mallTypes: mallTypes
-        };
-        const dataStr = JSON.stringify(backupData, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
+        const backupData = { version: "1.0", backupDate: new Date().toISOString(), transactions, availableLicenses, mallTypes };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `terminal_backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(a.href);
         showMessage("✅ Full backup created!", "success");
     }
 
@@ -1011,32 +1027,25 @@
                 const backupData = JSON.parse(e.target.result);
                 if (confirm(`Restore ${backupData.transactions?.length || 0} transactions and ${backupData.mallTypes?.length || 0} mall types?`)) {
                     transactions = backupData.transactions || [];
-                    availableLicenses = backupData.availableLicenses !== undefined ? backupData.availableLicenses : 100;
+                    availableLicenses = backupData.availableLicenses ?? 100;
                     mallTypes = backupData.mallTypes || [...DEFAULT_MALLS];
-                    transactions.forEach(t => {
-                        if (!t.remarks) t.remarks = "";
-                        if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
-                    });
+                    transactions.forEach(t => { if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); if (!t.remarks) t.remarks = ""; if (!t.mallType) t.mallType = ""; });
                     renderUI();
                     showMessage("✅ Restore successful!", "success");
                 }
-            } catch(error) {
-                showMessage("❌ Invalid backup file", "error");
-            }
+            } catch(error) { showMessage("❌ Invalid backup file", "error"); }
         };
         reader.readAsText(file);
     }
 
     function exportToJSON() {
-        const dataToExport = { transactions, availableLicenses, mallTypes, exportDate: new Date().toISOString() };
-        const dataStr = JSON.stringify(dataToExport, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
+        const data = { transactions, availableLicenses, mallTypes, exportDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `terminal_export_${new Date().toISOString().slice(0,19)}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(a.href);
         showMessage("✅ Data exported!", "success");
     }
 
@@ -1046,17 +1055,12 @@
             try {
                 const imported = JSON.parse(e.target.result);
                 transactions = imported.transactions || (Array.isArray(imported) ? imported : []);
-                availableLicenses = imported.availableLicenses !== undefined ? imported.availableLicenses : 100;
+                availableLicenses = imported.availableLicenses ?? 100;
                 mallTypes = imported.mallTypes || [...DEFAULT_MALLS];
-                transactions.forEach(t => {
-                    if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
-                    if (!t.remarks) t.remarks = "";
-                });
+                transactions.forEach(t => { if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); if (!t.mallType) t.mallType = ""; });
                 renderUI();
                 showMessage(`✅ Imported ${transactions.length} records`, "success");
-            } catch(error) {
-                showMessage("❌ Error parsing JSON", "error");
-            }
+            } catch(error) { showMessage("❌ Error parsing JSON", "error"); }
         };
         reader.readAsText(file);
     }
@@ -1074,106 +1078,76 @@
                     for (let i = 1; i < lines.length; i++) {
                         if (lines[i].trim()) {
                             const parts = lines[i].split(',');
-                            if (parts.length >= 3) batchData.push({ from: parts[0].trim(), to: parts[1].trim(), tag: parts[2].trim() });
+                            if (parts.length >= 3) batchData.push({ from: parts[0].trim(), to: parts[1].trim(), mallType: parts[2]?.trim() || "", tag: parts[3]?.trim() || parts[2]?.trim() });
                         }
                     }
                 }
             } catch(error) { showMessage("Error parsing file", "error"); return; }
-            
-            let successCount = 0;
+            let success = 0;
             for (const item of batchData) {
-                const result = addTransaction(item.from, item.to, item.tag.toLowerCase(), false);
-                if (result.allowed) successCount++;
+                const tag = item.tag?.toLowerCase() === "transfer" ? "transfer" : "new_license";
+                const result = addTransaction(item.from, item.to, item.mallType || "", tag, false);
+                if (result.allowed) success++;
             }
             renderUI();
-            showMessage(`✅ Batch: ${successCount} successful`, "success");
+            showMessage(`✅ Batch: ${success} successful`, "success");
         };
         reader.readAsText(file);
     }
 
     function resetDatabase() {
-        if (prompt("Admin password:") === ADMIN_PASSWORD) {
-            resetToDefaults();
-            renderUI();
-            showMessage("✅ Database reset", "success");
-        } else {
-            showMessage("❌ Wrong password", "error");
-        }
+        if (prompt("Admin password:") === ADMIN_PASSWORD) { resetToDefaults(); renderUI(); showMessage("✅ Database reset", "success"); }
+        else showMessage("❌ Wrong password", "error");
     }
 
     function editLicenseCount() {
         if (prompt("Admin password:") === ADMIN_PASSWORD) {
             const newCount = prompt("New license count:", availableLicenses);
-            if (newCount && !isNaN(parseInt(newCount))) {
-                availableLicenses = parseInt(newCount);
-                renderUI();
-                showMessage(`✅ Licenses set to ${availableLicenses}`, "success");
-            }
-        } else {
-            showMessage("❌ Wrong password", "error");
-        }
+            if (newCount && !isNaN(parseInt(newCount))) { availableLicenses = parseInt(newCount); renderUI(); showMessage(`✅ Licenses set to ${availableLicenses}`, "success"); }
+        } else showMessage("❌ Wrong password", "error");
     }
 
-    function editRemarks(id) { 
-        const remarks = prompt("Remarks:", transactions.find(t => t.id === id)?.remarks || ""); 
-        if (remarks !== null) updateRemarks(id, remarks); 
-    }
-    
-    function deleteWithPassword(id) { 
-        if (prompt("Admin password:") === ADMIN_PASSWORD) deleteTransaction(id); 
-        else showMessage("❌ Wrong password", "error"); 
-    }
-    
+    function editRemarks(id) { const r = prompt("Remarks:", transactions.find(t => t.id === id)?.remarks); if (r !== null) updateRemarks(id, r); }
+    function deleteWithPassword(id) { if (prompt("Admin password:") === ADMIN_PASSWORD) deleteTransaction(id); else showMessage("❌ Wrong password", "error"); }
     function showMessage(msg, type) { 
-        const msgDiv = document.getElementById("messageArea"); 
-        msgDiv.style.display = "block"; 
-        msgDiv.textContent = msg; 
-        msgDiv.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`; 
-        setTimeout(() => msgDiv.style.display = "none", 4000); 
+        const div = document.getElementById("messageArea"); 
+        div.style.display = "block"; 
+        div.textContent = msg; 
+        div.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`; 
+        setTimeout(() => div.style.display = "none", 4000); 
     }
-    
-    function escapeHtml(str) { 
-        if (!str) return ""; 
-        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
-    }
-    
-    function escapeAttr(str) { 
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
-    }
+    function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+    function escapeAttr(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
     // EVENT LISTENERS
     document.getElementById("executeBtn")?.addEventListener("click", () => {
         const from = document.getElementById("fromCode").value;
         const to = document.getElementById("toCode").value;
+        const mallType = document.getElementById("mallTypeSelect").value;
         const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
-        if (!from || !to) showMessage("Fill both fields", "error");
-        else if (tag) addTransaction(from, to, tag, true);
+        if (!from || !to) showMessage("Fill FROM and TO fields", "error");
+        else addTransaction(from, to, mallType, tag, true);
         document.getElementById("fromCode").value = "";
         document.getElementById("toCode").value = "";
+        document.getElementById("mallTypeSelect").value = "";
     });
     
     document.getElementById("applyFiltersBtn")?.addEventListener("click", applyFilters);
     document.getElementById("clearFiltersBtn")?.addEventListener("click", clearFilters);
-    
-    // Live filter on Enter key
-    const filterInputs = ["filterStatus", "filterTag", "filterRemarks", "filterFrom", "filterTo"];
-    filterInputs.forEach(id => {
-        document.getElementById(id)?.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") applyFilters();
-        });
-    });
-    
     document.getElementById("resetBtn")?.addEventListener("click", resetDatabase);
     document.getElementById("exportBtn")?.addEventListener("click", exportToJSON);
     document.getElementById("editLicenseBtn")?.addEventListener("click", editLicenseCount);
-    document.getElementById("addMallTypeBtn")?.addEventListener("click", addNewMallType);
-    document.getElementById("resetMallDefaultsBtn")?.addEventListener("click", resetMallDefaults);
     document.getElementById("fullBackupBtn")?.addEventListener("click", fullBackup);
     document.getElementById("fullRestoreBtn")?.addEventListener("click", () => document.getElementById("restoreFile").click());
     document.getElementById("restoreFile")?.addEventListener("change", (e) => { if (e.target.files[0]) fullRestore(e.target.files[0]); e.target.value = ""; });
     document.getElementById("importBtn")?.addEventListener("click", () => document.getElementById("importFile").click());
     document.getElementById("importFile")?.addEventListener("change", (e) => { if (e.target.files[0]) importFromJSON(e.target.files[0]); e.target.value = ""; });
     document.getElementById("uploadBtn")?.addEventListener("click", () => { const f = document.getElementById("uploadFile").files[0]; if (f) processBatchUpload(f); else showMessage("Select a file", "error"); });
+    document.getElementById("manageMallTypesBtn")?.addEventListener("click", openMallModal);
+    document.getElementById("addMallModalBtn")?.addEventListener("click", addMallFromModal);
+    document.getElementById("closeModalBtn")?.addEventListener("click", closeMallModal);
+    document.querySelector(".close")?.addEventListener("click", closeMallModal);
+    window.onclick = function(event) { if (event.target === document.getElementById("mallModal")) closeMallModal(); };
     
     window.editRemarks = editRemarks;
     window.deleteWithPassword = deleteWithPassword;
