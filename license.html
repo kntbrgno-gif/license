@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Mall Type Manager</title>
+    <title>Terminal License Monitor · Advanced Filtering</title>
     <style>
         * {
             box-sizing: border-box;
@@ -35,6 +35,1120 @@
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: baseline;
+            gap: 0.75rem;
+        }
+
+        .title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c0ffb0, #2ecc71);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .badge {
+            background: #1a1f2e;
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #8f9bb5;
+            border: 1px solid #2ecc7133;
+        }
+
+        .grid-2col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            padding: 2rem;
+        }
+
+        .input-panel {
+            flex: 1.2;
+            min-width: 320px;
+            background: #0e1120;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border: 1px solid #232838;
+        }
+
+        .history-panel {
+            flex: 3;
+            min-width: 500px;
+            background: #0e1120;
+            border-radius: 1.5rem;
+            padding: 1.2rem 1rem;
+            border: 1px solid #232838;
+            overflow-x: auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.4rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #8e9baf;
+            margin-bottom: 0.4rem;
+        }
+
+        .terminal-input, .filter-input, .filter-select {
+            width: 100%;
+            background: #03050b;
+            border: 1px solid #2a2f42;
+            padding: 0.85rem 1rem;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-family: 'Fira Code', monospace;
+            color: #b3f0c0;
+            outline: none;
+        }
+
+        .terminal-input:focus, .filter-input:focus, .filter-select:focus {
+            border-color: #2ecc71;
+            box-shadow: 0 0 0 3px #2ecc7122;
+        }
+
+        .filter-input, .filter-select {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.8rem;
+        }
+
+        .filter-select {
+            cursor: pointer;
+        }
+
+        .mall-suggest {
+            margin-top: 0.3rem;
+            font-size: 0.7rem;
+            color: #6c7a96;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .radio-group {
+            background: #080b14;
+            padding: 0.7rem 1rem;
+            border-radius: 1rem;
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-top: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-group label {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #cad2e6;
+            font-size: 0.85rem;
+            text-transform: none;
+        }
+
+        button {
+            background: #1e2a3a;
+            border: none;
+            font-weight: bold;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #e2e8f0;
+            border-bottom: 2px solid #2ecc71;
+            background: #11161f;
+        }
+
+        button.primary {
+            background: #1e2f2a;
+            border-bottom: 2px solid #2ecc71;
+            color: #c0ffd8;
+        }
+
+        button.primary:hover {
+            background: #2c4a3e;
+            transform: translateY(-1px);
+        }
+
+        button.danger {
+            border-bottom: 2px solid #ff6b6b;
+        }
+
+        button.secondary {
+            border-bottom: 2px solid #3498db;
+            background: #1a2838;
+        }
+
+        button.warning {
+            border-bottom: 2px solid #f39c12;
+            background: #2a281a;
+        }
+
+        .alert {
+            background: #1e1a1f;
+            border-left: 5px solid #f39c12;
+            padding: 0.8rem;
+            border-radius: 0.8rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #ffd966;
+            display: none;
+        }
+
+        .alert.error {
+            border-left-color: #e74c3c;
+            color: #ffaa99;
+            background: #2c1a1a;
+        }
+
+        .alert.success {
+            border-left-color: #2ecc71;
+            color: #b0f0b0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            font-family: 'Fira Code', monospace;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.8rem 0.5rem;
+            background: #0a0d18;
+            color: #8aa9d6;
+            border-bottom: 1px solid #2ecc7140;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 0.7rem 0.5rem;
+            border-bottom: 1px solid #1e2438;
+            color: #ccd6f0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: #1e2a2a;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .status-denied {
+            background: #3c1e1e;
+            color: #ff9e8f;
+        }
+
+        .status-allowed {
+            background: #1c3f2a;
+            color: #94ffb4;
+        }
+
+        .status-warning {
+            background: #4a3a1a;
+            color: #ffde9c;
+        }
+
+        .scroll-table {
+            max-height: 550px;
+            overflow-y: auto;
+        }
+
+        .note {
+            font-size: 0.7rem;
+            color: #6c7a96;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .mall-library {
+            background: #080b14;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin: 1rem 0 0.5rem 0;
+            border: 1px solid #2ecc7133;
+        }
+
+        .mall-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .mall-badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0 8px 0;
+        }
+
+        .mall-chip {
+            background: #1a2332;
+            border-radius: 32px;
+            padding: 0.3rem 0.9rem;
+            font-size: 0.7rem;
+            font-family: monospace;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #2ecc7166;
+            color: #b9f6ca;
+        }
+
+        .mall-chip button {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: #ffaa88;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-bottom: none;
+            width: 20px;
+            height: 20px;
+            line-height: 1;
+        }
+
+        .mall-chip button:hover {
+            color: #ff6b6b;
+            transform: none;
+        }
+
+        .mall-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            padding: 0.4rem 1rem;
+            font-size: 0.7rem;
+        }
+
+        .upload-area, .cloud-actions, .backup-area {
+            background: #080b14;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-top: 1rem;
+            border: 1px dashed #2ecc71;
+        }
+
+        .backup-area {
+            border-color: #3498db;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button.small {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.7rem;
+        }
+
+        .stats {
+            background: #080b14;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .license-counter {
+            background: linear-gradient(135deg, #1a2a1a, #0e1a0e);
+            border: 2px solid #2ecc71;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .license-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2ecc71;
+            font-family: monospace;
+        }
+
+        .filter-bar {
+            background: #0a0d18;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .filter-label {
+            font-size: 0.65rem;
+            color: #8aa9d6;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .filter-stats {
+            font-size: 0.7rem;
+            color: #8e9baf;
+            padding: 0.5rem;
+            background: #0e1120;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .highlight {
+            background: #2ecc7133;
+            color: #b0ffb0;
+        }
+    </style>
+</head>
+<body>
+<div class="monitor-container">
+    <div class="terminal-header">
+        <div class="title">⟡ LICENSE TRANSFER MONITOR · ADVANCED FILTERING ⟡</div>
+        <div class="badge">Filter by Status, Remarks, Tag, Terminal Codes</div>
+    </div>
+
+    <div class="grid-2col">
+        <div class="input-panel">
+            <!-- License Counter Display -->
+            <div class="license-counter">
+                <div class="license-number" id="licenseCount">0</div>
+                <div class="license-label">NEW LICENSE REMAINING</div>
+                <button id="editLicenseBtn" class="edit-license-btn" style="background:#1e2f2a; margin-top: 6px;">✏️ EDIT LICENSE COUNT (Password)</button>
+                <div class="license-label" style="margin-top: 0.5rem; font-size: 0.7rem;" id="licenseStatus"></div>
+            </div>
+
+            <div class="form-group">
+                <label>📡 FROM TERMINAL CODE</label>
+                <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2" autocomplete="off">
+            </div>
+            
+            <div class="form-group">
+                <label>🎯 TO TERMINAL CODE</label>
+                <input type="text" id="toCode" class="terminal-input" list="mallTypesDatalist" placeholder="e.g., MALL-PLAZA, TERM-123" autocomplete="off">
+                <datalist id="mallTypesDatalist"></datalist>
+                <div class="mall-suggest">
+                    <span>✨ Select from library or type new</span>
+                    <span class="combo-suggestion">⬇️ use datalist</span>
+                </div>
+            </div>
+
+            <!-- MALL TYPE LIBRARY -->
+            <div class="mall-library">
+                <div class="mall-header">
+                    <span>🏬 MALL TYPES LIBRARY (editable)</span>
+                    <button id="addMallTypeBtn" class="btn-icon" style="background:#2c3e2f;">➕ ADD NEW</button>
+                </div>
+                <div id="mallTypesContainer" class="mall-badge-list"></div>
+                <div class="mall-actions">
+                    <button id="resetMallDefaultsBtn" class="btn-icon secondary" style="font-size:0.7rem;">⟳ Reset default malls</button>
+                    <small style="color:#6c7a96;">click ✏️ to edit, 🗑️ to delete</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>🏷️ LICENSE ACTION TAG</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="licenseTag" value="new_license" checked> ✨ NEW LICENSE (Uses 1 license)</label>
+                    <label><input type="radio" name="licenseTag" value="transfer"> 🔄 TRANSFER (No license cost)</label>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="executeBtn" class="primary">⚡ EXECUTE TRANSFER</button>
+                <button id="resetBtn" class="danger">🗑️ RESET DATABASE</button>
+            </div>
+
+            <div class="stats">
+                <span>📊 Total Transfers: <strong id="statTotal">0</strong></span>
+                <span>🔀 FROM Terminals Used: <strong id="statFromCount">0</strong></span>
+                <span>✅ NEW Licenses Used: <strong id="statLicensesUsed">0</strong></span>
+            </div>
+
+            <!-- FULL BACKUP SECTION -->
+            <div class="backup-area">
+                <label>💾 FULL BACKUP & RESTORE</label>
+                <div class="button-group">
+                    <button id="fullBackupBtn" class="primary" style="background:#1e3f4a;">📥 DOWNLOAD FULL BACKUP</button>
+                    <button id="fullRestoreBtn" class="secondary">📂 RESTORE FROM BACKUP</button>
+                </div>
+                <input type="file" id="restoreFile" accept=".json" style="display: none;">
+                <div class="note">💾 Backup includes: All transactions + License count + Mall types</div>
+            </div>
+
+            <!-- Cloud Sync -->
+            <div class="cloud-actions">
+                <label>☁️ EXPORT / IMPORT</label>
+                <div class="button-group">
+                    <button id="exportBtn" class="secondary">💾 EXPORT TO JSON</button>
+                    <button id="importBtn" class="secondary">📂 IMPORT FROM JSON</button>
+                </div>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+
+            <!-- Batch Upload -->
+            <div class="upload-area">
+                <label>📁 BATCH UPLOAD (CSV/JSON)</label>
+                <input type="file" id="uploadFile" accept=".csv,.json" class="file-input">
+                <button id="uploadBtn" class="secondary" style="margin-top: 0.5rem; width: 100%;">📤 UPLOAD & PROCESS</button>
+            </div>
+
+            <div id="messageArea" class="alert" style="display: none;"></div>
+            <div class="note">
+                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license
+            </div>
+        </div>
+
+        <div class="history-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+                <h3 style="margin:0; color:#bdd4ff;">📋 LICENSE TRANSFER LEDGER</h3>
+                <span id="recordCount" style="background:#1e2638; padding:0.2rem 0.6rem; border-radius: 14px;">0 records</span>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="filter-bar">
+                <div class="filter-row">
+                    <div>
+                        <div class="filter-label">🔍 Filter by STATUS</div>
+                        <select id="filterStatus" class="filter-select">
+                            <option value="ALL">All Statuses</option>
+                            <option value="ALLOWED">✓ Allowed</option>
+                            <option value="DENIED">✗ Denied</option>
+                            <option value="WARNING">⚠️ Warning/Duplicate</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="filter-label">🏷️ Filter by TAG</div>
+                        <select id="filterTag" class="filter-select">
+                            <option value="ALL">All Tags</option>
+                            <option value="new_license">✨ NEW LICENSE</option>
+                            <option value="transfer">🔄 TRANSFER</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="filter-label">📝 Filter by REMARKS</div>
+                        <input type="text" id="filterRemarks" class="filter-input" placeholder="Search in remarks...">
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <div>
+                        <div class="filter-label">📡 Filter by FROM TERMINAL</div>
+                        <input type="text" id="filterFrom" class="filter-input" placeholder="FROM code contains...">
+                    </div>
+                    <div>
+                        <div class="filter-label">🎯 Filter by TO TERMINAL</div>
+                        <input type="text" id="filterTo" class="filter-input" placeholder="TO code contains...">
+                    </div>
+                    <div>
+                        <div class="filter-label">🏬 Filter by MALL TYPE</div>
+                        <input type="text" id="filterMallType" class="filter-input" placeholder="Mall type contains...">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button id="clearFiltersBtn" class="small secondary">✖️ Clear All Filters</button>
+                    <button id="applyFiltersBtn" class="small primary">🔍 Apply Filters</button>
+                </div>
+                <div id="filterStats" class="filter-stats">Showing all records</div>
+            </div>
+
+            <div class="scroll-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>FROM</th>
+                            <th>TO</th>
+                            <th>Tag</th>
+                            <th>FROM Used Before?</th>
+                            <th>Timestamp</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // GLOBAL STATE
+    let transactions = [];
+    let availableLicenses = 100;
+    let mallTypes = [];
+    let currentFilters = {
+        status: "ALL",
+        tag: "ALL",
+        remarks: "",
+        fromCode: "",
+        toCode: "",
+        mallType: ""
+    };
+    
+    const ADMIN_PASSWORD = "admin123";
+    const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
+
+    function persistFullState() {
+        const dataToSave = {
+            transactions: transactions,
+            availableLicenses: availableLicenses,
+            mallTypes: mallTypes,
+            lastBackup: new Date().toISOString()
+        };
+        localStorage.setItem("terminal_license_monitor", JSON.stringify(dataToSave));
+    }
+
+    function loadData() {
+        const stored = localStorage.getItem("terminal_license_monitor");
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                transactions = parsed.transactions || [];
+                availableLicenses = parsed.availableLicenses !== undefined ? parsed.availableLicenses : 100;
+                mallTypes = parsed.mallTypes && Array.isArray(parsed.mallTypes) ? parsed.mallTypes : [...DEFAULT_MALLS];
+                transactions.forEach(t => { 
+                    if (!t.remarks) t.remarks = "";
+                    if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+                });
+            } catch(e) { 
+                resetToDefaults();
+            }
+        } else {
+            resetToDefaults();
+        }
+        renderUI();
+    }
+
+    function resetToDefaults() {
+        transactions = [];
+        availableLicenses = 100;
+        mallTypes = [...DEFAULT_MALLS];
+    }
+
+    function renderUI() {
+        renderFilteredTable();
+        updateStats();
+        updateLicenseDisplay();
+        renderMallLibrary();
+        updateRecordCount();
+        persistFullState();
+    }
+
+    function getStatusCategory(statusText) {
+        if (statusText.includes("ALLOWED")) return "ALLOWED";
+        if (statusText.includes("DENIED") || statusText.includes("NOT ALLOWED") || statusText.includes("NO LICENSES")) return "DENIED";
+        if (statusText.includes("DUPLICATE") || statusText.includes("WARNING")) return "WARNING";
+        return "ALLOWED";
+    }
+
+    function applyFilters() {
+        currentFilters.status = document.getElementById("filterStatus").value;
+        currentFilters.tag = document.getElementById("filterTag").value;
+        currentFilters.remarks = document.getElementById("filterRemarks").value.toLowerCase();
+        currentFilters.fromCode = document.getElementById("filterFrom").value.toLowerCase();
+        currentFilters.toCode = document.getElementById("filterTo").value.toLowerCase();
+        currentFilters.mallType = document.getElementById("filterMallType").value.toLowerCase();
+        renderFilteredTable();
+        updateFilterStats();
+    }
+
+    function clearFilters() {
+        document.getElementById("filterStatus").value = "ALL";
+        document.getElementById("filterTag").value = "ALL";
+        document.getElementById("filterRemarks").value = "";
+        document.getElementById("filterFrom").value = "";
+        document.getElementById("filterTo").value = "";
+        document.getElementById("filterMallType").value = "";
+        currentFilters = {
+            status: "ALL",
+            tag: "ALL",
+            remarks: "",
+            fromCode: "",
+            toCode: "",
+            mallType: ""
+        };
+        renderFilteredTable();
+        updateFilterStats();
+        showMessage("All filters cleared", "success");
+    }
+
+    function updateFilterStats() {
+        const filtered = getFilteredTransactions();
+        const statsDiv = document.getElementById("filterStats");
+        if (filtered.length === transactions.length) {
+            statsDiv.innerHTML = `📊 Showing all ${transactions.length} records`;
+        } else {
+            statsDiv.innerHTML = `🔍 Showing ${filtered.length} of ${transactions.length} records (${Math.round(filtered.length/transactions.length*100)}%)`;
+        }
+    }
+
+    function getFilteredTransactions() {
+        let filtered = [...transactions];
+        
+        // Filter by status
+        if (currentFilters.status !== "ALL") {
+            filtered = filtered.filter(t => getStatusCategory(t.statusText) === currentFilters.status);
+        }
+        
+        // Filter by tag
+        if (currentFilters.tag !== "ALL") {
+            filtered = filtered.filter(t => t.tag === currentFilters.tag);
+        }
+        
+        // Filter by remarks
+        if (currentFilters.remarks) {
+            filtered = filtered.filter(t => t.remarks.toLowerCase().includes(currentFilters.remarks));
+        }
+        
+        // Filter by FROM code
+        if (currentFilters.fromCode) {
+            filtered = filtered.filter(t => t.fromCode.toLowerCase().includes(currentFilters.fromCode));
+        }
+        
+        // Filter by TO code
+        if (currentFilters.toCode) {
+            filtered = filtered.filter(t => t.toCode.toLowerCase().includes(currentFilters.toCode));
+        }
+        
+        // Filter by mall type (if the transaction has mallType field - for compatibility)
+        if (currentFilters.mallType) {
+            filtered = filtered.filter(t => (t.mallType || "").toLowerCase().includes(currentFilters.mallType));
+        }
+        
+        return filtered;
+    }
+
+    function renderFilteredTable() {
+        const tbody = document.getElementById("tableBody");
+        const filtered = getFilteredTransactions();
+        
+        if (!filtered.length) { 
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">📭 No transactions match the filters</td></tr>'; 
+            return; 
+        }
+        
+        let html = "";
+        for (const t of filtered) {
+            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText && t.statusText.includes("DUPLICATE") ? "status-warning" : "status-allowed");
+            const tagDisplay = t.tag === "new_license" ? "✨ NEW LICENSE" : "🔄 TRANSFER";
+            const fromUsedDisplay = t.tag === "transfer" ? (t.fromUsedBefore || "NO") : "—";
+            html += `<tr>
+                <td><code><strong>${escapeHtml(t.fromCode)}</strong></code></td>
+                <td><code>${escapeHtml(t.toCode)}</code></td>
+                <td>${tagDisplay}</td>
+                <td style="font-size:0.7rem;">${fromUsedDisplay}</td>
+                <td style="font-size:0.7rem;">${escapeHtml(t.timestamp)}</td>
+                <td><span class="status-badge ${statusClass}">${escapeHtml(t.statusText)}</span></td>
+                <td>${escapeHtml(t.remarks) || '<em style="color:#6c7a96;">—</em>'}</td>
+                <td class="action-icons">
+                    <button class="small secondary" onclick="editRemarks('${t.id}')">✏️</button>
+                    <button class="small danger" onclick="deleteWithPassword('${t.id}')">🗑️</button>
+                </td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+    }
+
+    function updateRecordCount() {
+        const filtered = getFilteredTransactions();
+        const recordSpan = document.getElementById("recordCount");
+        if (recordSpan) {
+            if (filtered.length === transactions.length) {
+                recordSpan.textContent = transactions.length + " records";
+            } else {
+                recordSpan.textContent = filtered.length + " / " + transactions.length + " records";
+            }
+        }
+    }
+
+    function updateStats() {
+        const total = transactions.length;
+        const usedFromCount = getUsedFromTerminals().size;
+        const newLicensesUsed = transactions.filter(t => t.tag === "new_license" && t.allowedFlag === true).length;
+        document.getElementById("statTotal").textContent = total;
+        document.getElementById("statFromCount").textContent = usedFromCount;
+        document.getElementById("statLicensesUsed").textContent = newLicensesUsed;
+    }
+
+    function updateLicenseDisplay() {
+        document.getElementById("licenseCount").textContent = availableLicenses;
+        const licenseStatus = document.getElementById("licenseStatus");
+        if (availableLicenses <= 10 && availableLicenses > 0) {
+            licenseStatus.innerHTML = "⚠️ LOW LICENSES! Only " + availableLicenses + " NEW licenses left";
+            licenseStatus.style.color = "#ffaa88";
+        } else if (availableLicenses <= 0) {
+            licenseStatus.innerHTML = "❌ NO NEW LICENSES LEFT! Add more to use NEW LICENSE tag.";
+            licenseStatus.style.color = "#ff6b6b";
+        } else {
+            licenseStatus.innerHTML = "✅ " + availableLicenses + " NEW licenses available";
+            licenseStatus.style.color = "#8e9baf";
+        }
+    }
+
+    function getUsedFromTerminals() {
+        const usedFrom = new Set();
+        transactions.forEach(t => { if (t.tag === "transfer") usedFrom.add(t.fromCode); });
+        return usedFrom;
+    }
+
+    function isFromTerminalUsed(fromCode, excludeId = null) {
+        return transactions.some(t => t.fromCode === fromCode && t.tag === "transfer" && (excludeId === null || t.id !== excludeId));
+    }
+
+    function evaluateTransaction(fromCode, toCode, tag) {
+        const fNorm = fromCode.trim();
+        const tNorm = toCode.trim();
+        if (fNorm === "" || tNorm === "") return { allowed: false, message: "❌ Terminal codes cannot be empty!", statusLabel: "INVALID INPUT" };
+        if (fNorm === tNorm) return { allowed: false, message: "🚫 FROM cannot be same as TO", statusLabel: "SAME CODE ERROR" };
+        const fromUsedBefore = isFromTerminalUsed(fNorm);
+        const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
+        
+        if (tag === "new_license") {
+            if (availableLicenses <= 0) return { allowed: false, message: "❌ NO NEW LICENSES AVAILABLE!", statusLabel: "NO LICENSES" };
+            return { allowed: true, message: duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved", statusLabel: duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)" };
+        } else if (tag === "transfer") {
+            if (fromUsedBefore) return { allowed: false, message: `⛔ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer before.`, statusLabel: "⛔ NOT ALLOWED (FROM USED)" };
+            return { allowed: true, message: duplicateExists ? "⚠️ Duplicate but first transfer for FROM terminal" : "✅ TRANSFER allowed (no license cost)", statusLabel: duplicateExists ? "⚠️ DUPLICATE (TRANSFER)" : "✓ ALLOWED (TRANSFER)" };
+        }
+        return { allowed: false, message: "Invalid tag", statusLabel: "ERROR" };
+    }
+
+    function addTransaction(fromCode, toCode, tag, showMessageFlag = true) {
+        const evalResult = evaluateTransaction(fromCode, toCode, tag);
+        let licenseConsumed = 0;
+        if (evalResult.allowed && tag === "new_license") {
+            if (availableLicenses > 0) { availableLicenses--; licenseConsumed = 1; }
+            else { evalResult.allowed = false; evalResult.message = "❌ No NEW licenses left!"; evalResult.statusLabel = "NO LICENSES"; }
+        }
+        const newRecord = {
+            id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
+            fromCode: fromCode.trim(),
+            toCode: toCode.trim(),
+            tag: tag,
+            fromUsedBefore: tag === "transfer" ? (isFromTerminalUsed(fromCode.trim()) ? "YES" : "NO") : "N/A",
+            timestamp: new Date().toLocaleString(),
+            statusText: evalResult.statusLabel,
+            allowedFlag: evalResult.allowed,
+            remarks: "",
+            mallType: "",
+            licenseConsumed: licenseConsumed
+        };
+        transactions.unshift(newRecord);
+        if (showMessageFlag) {
+            if (evalResult.allowed) showMessage(`✔️ SUCCESS: ${evalResult.message}`, "success");
+            else showMessage(`❌ BLOCKED: ${evalResult.message}`, "error");
+        }
+        renderUI();
+        return evalResult;
+    }
+
+    function deleteTransaction(id) {
+        const transaction = transactions.find(t => t.id === id);
+        if (transaction && transaction.allowedFlag && transaction.tag === "new_license") availableLicenses++;
+        transactions = transactions.filter(t => t.id !== id);
+        renderUI();
+        showMessage("✅ Transaction deleted (license refunded if applicable)", "success");
+    }
+
+    function updateRemarks(id, remarks) {
+        const transaction = transactions.find(t => t.id === id);
+        if (transaction) { transaction.remarks = remarks; renderUI(); showMessage("✅ Remarks updated", "success"); }
+    }
+
+    // MALL TYPES MANAGEMENT
+    function renderMallLibrary() {
+        const container = document.getElementById("mallTypesContainer");
+        if (!container) return;
+        if (!mallTypes.length) { container.innerHTML = '<span style="color:#7e8aa2;">✨ No mall types, click "+ ADD NEW"</span>'; }
+        else {
+            container.innerHTML = mallTypes.map((mall, idx) => `
+                <div class="mall-chip">
+                    <span>${escapeHtml(mall)}</span>
+                    <button class="edit-mall-btn" data-mall="${escapeAttr(mall)}" data-index="${idx}" title="Edit">✏️</button>
+                    <button class="del-mall-btn" data-mall="${escapeAttr(mall)}" data-index="${idx}" title="Delete">🗑️</button>
+                </div>
+            `).join("");
+        }
+        const datalist = document.getElementById("mallTypesDatalist");
+        if (datalist) {
+            datalist.innerHTML = mallTypes.map(m => `<option value="${escapeAttr(m)}">`).join('');
+        }
+        
+        document.querySelectorAll('.edit-mall-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const oldVal = btn.getAttribute('data-mall');
+                const newVal = prompt("Edit mall type:", oldVal);
+                if (newVal && newVal.trim() !== "" && newVal !== oldVal) {
+                    const idx = mallTypes.findIndex(m => m === oldVal);
+                    if (idx !== -1) { mallTypes[idx] = newVal.trim(); renderUI(); showMessage(`Mall type updated: ${newVal}`, "success"); }
+                } else if (newVal && newVal.trim() === "") { showMessage("Mall type cannot be empty", "error"); }
+            };
+        });
+        document.querySelectorAll('.del-mall-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const mallVal = btn.getAttribute('data-mall');
+                if (confirm(`Remove mall type "${mallVal}" from library?`)) {
+                    mallTypes = mallTypes.filter(m => m !== mallVal);
+                    renderUI();
+                    showMessage(`Removed "${mallVal}"`, "success");
+                }
+            };
+        });
+    }
+
+    function addNewMallType() {
+        let newMall = prompt("Enter new mall type:");
+        if (newMall && newMall.trim() !== "") {
+            newMall = newMall.trim();
+            if (!mallTypes.includes(newMall)) {
+                mallTypes.push(newMall);
+                renderUI();
+                showMessage(`➕ Mall type "${newMall}" added`, "success");
+            } else { showMessage("Already exists!", "error"); }
+        }
+    }
+
+    function resetMallDefaults() {
+        if (confirm("Reset mall types to defaults?")) {
+            mallTypes = [...DEFAULT_MALLS];
+            renderUI();
+            showMessage("🏬 Mall types reset", "success");
+        }
+    }
+
+    // BACKUP FUNCTIONS
+    function fullBackup() {
+        const backupData = {
+            version: "1.0",
+            backupDate: new Date().toISOString(),
+            transactions: transactions,
+            availableLicenses: availableLicenses,
+            mallTypes: mallTypes
+        };
+        const dataStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `terminal_backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showMessage("✅ Full backup created!", "success");
+    }
+
+    function fullRestore(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const backupData = JSON.parse(e.target.result);
+                if (confirm(`Restore ${backupData.transactions?.length || 0} transactions and ${backupData.mallTypes?.length || 0} mall types?`)) {
+                    transactions = backupData.transactions || [];
+                    availableLicenses = backupData.availableLicenses !== undefined ? backupData.availableLicenses : 100;
+                    mallTypes = backupData.mallTypes || [...DEFAULT_MALLS];
+                    transactions.forEach(t => {
+                        if (!t.remarks) t.remarks = "";
+                        if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+                    });
+                    renderUI();
+                    showMessage("✅ Restore successful!", "success");
+                }
+            } catch(error) {
+                showMessage("❌ Invalid backup file", "error");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function exportToJSON() {
+        const dataToExport = { transactions, availableLicenses, mallTypes, exportDate: new Date().toISOString() };
+        const dataStr = JSON.stringify(dataToExport, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `terminal_export_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showMessage("✅ Data exported!", "success");
+    }
+
+    function importFromJSON(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                transactions = imported.transactions || (Array.isArray(imported) ? imported : []);
+                availableLicenses = imported.availableLicenses !== undefined ? imported.availableLicenses : 100;
+                mallTypes = imported.mallTypes || [...DEFAULT_MALLS];
+                transactions.forEach(t => {
+                    if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+                    if (!t.remarks) t.remarks = "";
+                });
+                renderUI();
+                showMessage(`✅ Imported ${transactions.length} records`, "success");
+            } catch(error) {
+                showMessage("❌ Error parsing JSON", "error");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function processBatchUpload(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let batchData = [];
+            try {
+                if (file.name.endsWith('.json')) {
+                    const parsed = JSON.parse(e.target.result);
+                    batchData = parsed.transactions || (Array.isArray(parsed) ? parsed : []);
+                } else {
+                    const lines = e.target.result.split('\n');
+                    for (let i = 1; i < lines.length; i++) {
+                        if (lines[i].trim()) {
+                            const parts = lines[i].split(',');
+                            if (parts.length >= 3) batchData.push({ from: parts[0].trim(), to: parts[1].trim(), tag: parts[2].trim() });
+                        }
+                    }
+                }
+            } catch(error) { showMessage("Error parsing file", "error"); return; }
+            
+            let successCount = 0;
+            for (const item of batchData) {
+                const result = addTransaction(item.from, item.to, item.tag.toLowerCase(), false);
+                if (result.allowed) successCount++;
+            }
+            renderUI();
+            showMessage(`✅ Batch: ${successCount} successful`, "success");
+        };
+        reader.readAsText(file);
+    }
+
+    function resetDatabase() {
+        if (prompt("Admin password:") === ADMIN_PASSWORD) {
+            resetToDefaults();
+            renderUI();
+            showMessage("✅ Database reset", "success");
+        } else {
+            showMessage("❌ Wrong password", "error");
+        }
+    }
+
+    function editLicenseCount() {
+        if (prompt("Admin password:") === ADMIN_PASSWORD) {
+            const newCount = prompt("New license count:", availableLicenses);
+            if (newCount && !isNaN(parseInt(newCount))) {
+                availableLicenses = parseInt(newCount);
+                renderUI();
+                showMessage(`✅ Licenses set to ${availableLicenses}`, "success");
+            }
+        } else {
+            showMessage("❌ Wrong password", "error");
+        }
+    }
+
+    function editRemarks(id) { 
+        const remarks = prompt("Remarks:", transactions.find(t => t.id === id)?.remarks || ""); 
+        if (remarks !== null) updateRemarks(id, remarks); 
+    }
+    
+    function deleteWithPassword(id) { 
+        if (prompt("Admin password:") === ADMIN_PASSWORD) deleteTransaction(id); 
+        else showMessage("❌ Wrong password", "error"); 
+    }
+    
+    function showMessage(msg, type) { 
+        const msgDiv = document.getElementById("messageArea"); 
+        msgDiv.style.display = "block"; 
+        msgDiv.textContent = msg; 
+        msgDiv.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`; 
+        setTimeout(() => msgDiv.style.display = "none", 4000); 
+    }
+    
+    function escapeHtml(str) { 
+        if (!str) return ""; 
+        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
+    }
+    
+    function escapeAttr(str) { 
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
+    }
+
+    // EVENT LISTENERS
+    document.getElementById("executeBtn")?.addEventListener("click", () => {
+        const from = document.getElementById("fromCode").value;
+        const to = document.getElementById("toCode").value;
+        const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
+        if (!from || !to) showMessage("Fill both fields", "error");
+        else if (tag) addTransaction(from, to, tag, true);
+        document.getElementById("fromCode").value = "";
+        document.getElementById("toCode").value = "";
+    });
+    
+    document.getElementById("applyFiltersBtn")?.addEventListener("click", applyFilters);
+    document.getElementById("clearFiltersBtn")?.addEventListener("click", clearFilters);
+    
+    // Add live search on Enter key
+    const filterInputs = ["filterStatus", "filterTag", "filterRemarks", "filterFrom", "filterTo", "filterMallType"];
+    filterInputs.forEach(id => {
+        document.getElementById(id)?.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") applyFilters();
+        });
+    });
+    
+    document.getElementById("resetBtn")?.addEventListener("click", resetDatabase);
+    document.getElementById("exportBtn")?.addEventListener("click", exportToJSON);
+    document.getElementById("editLicenseBtn")?.addEventListener("click", editLicenseCount);
+    document.getElementById("addMallTypeBtn")?.addEventListener("click", addNewMallType);
+    document.getElementById("resetMallDefaultsBtn")?.addEventListener("click", resetMallDefaults);
+    document.getElementById("fullBackupBtn")?.addEventListener("click", fullBackup);
+    document.getElementById("fullRestoreBtn")?.addEventListener("click", () => document.getElementById("restoreFile").click());
+    document.getElementById("restoreFile")?.addEventListener("change", (e) => { if (e.target.files[0]) fullRestore(e.target.files[0]); e.target.value = ""; });
+    document.getElementById("importBtn")?.addEventListener("click", () => document.getElementById("importFile").click());
+    document.getElementById("importFile")?.addEventListener("change", (e) => { if (e.target.files[0]) importFromJSON(e.target.files[0]); e.target.value = ""; });
+    document.getElementById("uploadBtn")?.addEventListener("click", () => { const f = document.getElementById("uploadFile").files[0]; if (f) processBatchUpload(f); else showMessage("Select a file", "error"); });
+    
+    window.editRemarks = editRemarks;
+    window.deleteWithPassword = deleteWithPassword;
+    
+    loadData();
+</script>
+</body>
+</html>            align-items: baseline;
             gap: 0.75rem;
         }
 
