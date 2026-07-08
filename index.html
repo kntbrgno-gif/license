@@ -343,15 +343,35 @@
         }
 
         .stats {
-            background: #080b14;
-            padding: 0.8rem;
-            border-radius: 0.5rem;
+            background: #0a0d18;
+            padding: 1rem;
+            border-radius: 0.8rem;
             margin-bottom: 1rem;
-            font-size: 0.7rem;
+            border: 1px solid #2ecc7140;
+        }
+
+        .stat-item {
             display: flex;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+            align-items: center;
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: #0e1120;
+            border-radius: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #8aa9d6;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2ecc71;
+            font-family: monospace;
         }
 
         .license-counter {
@@ -368,6 +388,11 @@
             font-weight: bold;
             color: #2ecc71;
             font-family: monospace;
+        }
+
+        .license-label {
+            color: #b3f0c0;
+            font-size: 0.8rem;
         }
 
         .filter-bar {
@@ -410,7 +435,7 @@
 
         .filter-stats {
             font-size: 0.7rem;
-            color: #8e9baf;
+            color: #b3f0c0;
             padding: 0.5rem;
             background: #0e1120;
             border-radius: 0.5rem;
@@ -418,7 +443,6 @@
             text-align: center;
         }
 
-        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -486,6 +510,7 @@
 
         .mall-item-modal span {
             font-family: monospace;
+            color: #b3f0c0;
         }
 
         .modal-input {
@@ -504,6 +529,11 @@
             color: #ffaa88;
             margin-left: 0.5rem;
         }
+
+        .btn-sm {
+            padding: 0.2rem 0.6rem;
+            font-size: 0.65rem;
+        }
     </style>
 </head>
 <body>
@@ -519,7 +549,7 @@
             <div class="license-counter">
                 <div class="license-number" id="licenseCount">0</div>
                 <div class="license-label">NEW LICENSE REMAINING</div>
-                <button id="editLicenseBtn" class="edit-license-btn" style="background:#1e2f2a; margin-top: 6px;">✏️ EDIT LICENSE COUNT</button>
+                <button id="editLicenseBtn" style="background:#1e2f2a; margin-top: 6px; padding: 0.3rem 0.8rem; font-size: 0.7rem;">✏️ EDIT LICENSE COUNT</button>
                 <div class="license-label" style="margin-top: 0.5rem; font-size: 0.7rem;" id="licenseStatus"></div>
             </div>
 
@@ -563,9 +593,18 @@
 
             <!-- Stats -->
             <div class="stats">
-                <span>📊 Total Transfers: <strong id="statTotal">0</strong></span>
-                <span>🔀 FROM Terminals Used: <strong id="statFromCount">0</strong></span>
-                <span>✅ NEW Licenses Used: <strong id="statLicensesUsed">0</strong></span>
+                <div class="stat-item">
+                    <span class="stat-label">📊 Total Transfers:</span>
+                    <span class="stat-value" id="statTotal">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🔀 FROM Terminals Used:</span>
+                    <span class="stat-value" id="statFromCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">✅ NEW Licenses Used:</span>
+                    <span class="stat-value" id="statLicensesUsed">0</span>
+                </div>
             </div>
 
             <!-- Backup Section -->
@@ -606,7 +645,7 @@
         <div class="history-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
                 <h3 style="margin:0; color:#bdd4ff;">📋 LICENSE TRANSFER LEDGER</h3>
-                <span id="recordCount" style="background:#1e2638; padding:0.2rem 0.6rem; border-radius: 14px;">0 records</span>
+                <span id="recordCount" style="background:#1e2638; padding:0.2rem 0.6rem; border-radius: 14px; color: #b3f0c0;">0 records</span>
             </div>
 
             <!-- FILTER BAR -->
@@ -774,7 +813,6 @@
             </div>
         `).join("");
         
-        // Add event listeners for edit/delete in modal
         document.querySelectorAll('.edit-modal-mall').forEach(btn => {
             btn.onclick = (e) => {
                 e.stopPropagation();
@@ -784,7 +822,6 @@
                     const idx = mallTypes.findIndex(m => m === oldVal);
                     if (idx !== -1) { 
                         mallTypes[idx] = newVal.trim();
-                        // Also update any transactions that had this mall type
                         transactions.forEach(t => { if (t.mallType === oldVal) t.mallType = newVal.trim(); });
                         renderUI();
                         showMessage(`Mall type updated: ${newVal}`, "success");
@@ -798,7 +835,6 @@
                 const mallVal = btn.getAttribute('data-mall');
                 if (confirm(`Remove mall type "${mallVal}"? This will clear it from existing transactions.`)) {
                     mallTypes = mallTypes.filter(m => m !== mallVal);
-                    // Clear this mall type from transactions
                     transactions.forEach(t => { if (t.mallType === mallVal) t.mallType = ""; });
                     renderUI();
                     showMessage(`Removed "${mallVal}"`, "success");
@@ -939,10 +975,13 @@
         const licenseStatus = document.getElementById("licenseStatus");
         if (availableLicenses <= 10 && availableLicenses > 0) {
             licenseStatus.innerHTML = "⚠️ LOW LICENSES! Only " + availableLicenses + " NEW licenses left";
+            licenseStatus.style.color = "#ffaa88";
         } else if (availableLicenses <= 0) {
             licenseStatus.innerHTML = "❌ NO NEW LICENSES LEFT! Add more to use NEW LICENSE tag.";
+            licenseStatus.style.color = "#ff6b6b";
         } else {
             licenseStatus.innerHTML = "✅ " + availableLicenses + " NEW licenses available";
+            licenseStatus.style.color = "#8e9baf";
         }
     }
 
@@ -963,19 +1002,45 @@
         if (fNorm === tNorm) return { allowed: false, message: "FROM cannot be same as TO", statusLabel: "SAME CODE" };
         const fromUsedBefore = isFromTerminalUsed(fNorm);
         const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
+        
         if (tag === "new_license") {
-            if (availableLicenses <= 0) return { allowed: false, message: "No NEW licenses", statusLabel: "NO LICENSES" };
-            return { allowed: true, message: duplicateExists ? "Duplicate, approved" : "NEW LICENSE approved", statusLabel: duplicateExists ? "⚠️ DUPLICATE" : "✓ ALLOWED" };
-        } else {
-            if (fromUsedBefore) return { allowed: false, message: `FROM "${fNorm}" already used`, statusLabel: "FROM USED" };
-            return { allowed: true, message: duplicateExists ? "Duplicate, but allowed" : "TRANSFER allowed", statusLabel: duplicateExists ? "⚠️ DUPLICATE" : "✓ ALLOWED" };
+            if (availableLicenses <= 0) return { allowed: false, message: "No NEW licenses available!", statusLabel: "NO LICENSES" };
+            return { 
+                allowed: true, 
+                message: duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)", 
+                statusLabel: duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)" 
+            };
+        } else if (tag === "transfer") {
+            if (fromUsedBefore) return { 
+                allowed: false, 
+                message: `⛔ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer.`, 
+                statusLabel: "⛔ NOT ALLOWED (FROM USED)" 
+            };
+            return { 
+                allowed: true, 
+                message: duplicateExists ? "⚠️ Duplicate but first transfer for FROM terminal" : "✅ TRANSFER allowed (no license cost)", 
+                statusLabel: duplicateExists ? "⚠️ DUPLICATE (TRANSFER)" : "✓ ALLOWED (TRANSFER)" 
+            };
         }
+        return { allowed: false, message: "Invalid tag", statusLabel: "ERROR" };
     }
 
     function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
         const evalResult = evaluateTransaction(fromCode, toCode, tag);
-        let consumed = 0;
-        if (evalResult.allowed && tag === "new_license") { availableLicenses--; consumed = 1; }
+        let licenseConsumed = 0;
+        
+        // Deduct license if it's a NEW LICENSE and allowed
+        if (evalResult.allowed && tag === "new_license") {
+            if (availableLicenses > 0) {
+                availableLicenses--;
+                licenseConsumed = 1;
+            } else {
+                evalResult.allowed = false;
+                evalResult.message = "❌ No NEW licenses left!";
+                evalResult.statusLabel = "NO LICENSES";
+            }
+        }
+        
         const newRecord = {
             id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
             fromCode: fromCode.trim(),
@@ -987,30 +1052,46 @@
             statusText: evalResult.statusLabel,
             allowedFlag: evalResult.allowed,
             remarks: "",
-            licenseConsumed: consumed
+            licenseConsumed: licenseConsumed
         };
         transactions.unshift(newRecord);
-        if (showMsg) showMessage(evalResult.allowed ? `✔️ ${evalResult.message}` : `❌ ${evalResult.message}`, evalResult.allowed ? "success" : "error");
+        if (showMsg) {
+            if (evalResult.allowed) {
+                let msg = `✔️ ${evalResult.message}`;
+                if (tag === "new_license") msg += ` (${availableLicenses} NEW licenses left)`;
+                showMessage(msg, "success");
+            } else {
+                showMessage(`❌ ${evalResult.message}`, "error");
+            }
+        }
         renderUI();
         return evalResult;
     }
 
     function deleteTransaction(id) {
         const t = transactions.find(x => x.id === id);
-        if (t && t.allowedFlag && t.tag === "new_license") availableLicenses++;
+        if (t && t.allowedFlag && t.tag === "new_license") {
+            availableLicenses++; // Refund the license
+        }
         transactions = transactions.filter(x => x.id !== id);
         renderUI();
-        showMessage("Transaction deleted (license refunded if applicable)", "success");
+        showMessage("✅ Transaction deleted (license refunded if applicable)", "success");
     }
 
     function updateRemarks(id, remarks) {
         const t = transactions.find(x => x.id === id);
-        if (t) { t.remarks = remarks; renderUI(); showMessage("Remarks saved", "success"); }
+        if (t) { t.remarks = remarks; renderUI(); showMessage("✅ Remarks saved", "success"); }
     }
 
     // BACKUP FUNCTIONS
     function fullBackup() {
-        const backupData = { version: "1.0", backupDate: new Date().toISOString(), transactions, availableLicenses, mallTypes };
+        const backupData = { 
+            version: "1.0", 
+            backupDate: new Date().toISOString(), 
+            transactions: transactions, 
+            availableLicenses: availableLicenses, 
+            mallTypes: mallTypes 
+        };
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -1025,15 +1106,21 @@
         reader.onload = function(e) {
             try {
                 const backupData = JSON.parse(e.target.result);
-                if (confirm(`Restore ${backupData.transactions?.length || 0} transactions and ${backupData.mallTypes?.length || 0} mall types?`)) {
+                if (confirm(`⚠️ This will REPLACE all current data!\n\nRestore ${backupData.transactions?.length || 0} transactions and ${backupData.mallTypes?.length || 0} mall types?\n\nProceed?`)) {
                     transactions = backupData.transactions || [];
-                    availableLicenses = backupData.availableLicenses ?? 100;
+                    availableLicenses = backupData.availableLicenses !== undefined ? backupData.availableLicenses : 100;
                     mallTypes = backupData.mallTypes || [...DEFAULT_MALLS];
-                    transactions.forEach(t => { if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); if (!t.remarks) t.remarks = ""; if (!t.mallType) t.mallType = ""; });
+                    transactions.forEach(t => { 
+                        if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); 
+                        if (!t.remarks) t.remarks = ""; 
+                        if (!t.mallType) t.mallType = ""; 
+                    });
                     renderUI();
-                    showMessage("✅ Restore successful!", "success");
+                    showMessage(`✅ Restore successful! ${transactions.length} transactions restored.`, "success");
                 }
-            } catch(error) { showMessage("❌ Invalid backup file", "error"); }
+            } catch(error) { 
+                showMessage("❌ Invalid backup file", "error"); 
+            }
         };
         reader.readAsText(file);
     }
@@ -1055,12 +1142,18 @@
             try {
                 const imported = JSON.parse(e.target.result);
                 transactions = imported.transactions || (Array.isArray(imported) ? imported : []);
-                availableLicenses = imported.availableLicenses ?? 100;
+                availableLicenses = imported.availableLicenses !== undefined ? imported.availableLicenses : 100;
                 mallTypes = imported.mallTypes || [...DEFAULT_MALLS];
-                transactions.forEach(t => { if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); if (!t.mallType) t.mallType = ""; });
+                transactions.forEach(t => { 
+                    if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); 
+                    if (!t.mallType) t.mallType = ""; 
+                    if (!t.remarks) t.remarks = ""; 
+                });
                 renderUI();
                 showMessage(`✅ Imported ${transactions.length} records`, "success");
-            } catch(error) { showMessage("❌ Error parsing JSON", "error"); }
+            } catch(error) { 
+                showMessage("❌ Error parsing JSON", "error"); 
+            }
         };
         reader.readAsText(file);
     }
@@ -1078,46 +1171,95 @@
                     for (let i = 1; i < lines.length; i++) {
                         if (lines[i].trim()) {
                             const parts = lines[i].split(',');
-                            if (parts.length >= 3) batchData.push({ from: parts[0].trim(), to: parts[1].trim(), mallType: parts[2]?.trim() || "", tag: parts[3]?.trim() || parts[2]?.trim() });
+                            if (parts.length >= 3) {
+                                batchData.push({ 
+                                    from: parts[0].trim(), 
+                                    to: parts[1].trim(), 
+                                    mallType: parts[2]?.trim() || "", 
+                                    tag: (parts[3]?.trim() || parts[2]?.trim() || "transfer").toLowerCase() 
+                                });
+                            }
                         }
                     }
                 }
-            } catch(error) { showMessage("Error parsing file", "error"); return; }
-            let success = 0;
+            } catch(error) { 
+                showMessage("Error parsing file", "error"); 
+                return; 
+            }
+            
+            let successCount = 0;
             for (const item of batchData) {
-                const tag = item.tag?.toLowerCase() === "transfer" ? "transfer" : "new_license";
+                const tag = item.tag === "transfer" ? "transfer" : "new_license";
                 const result = addTransaction(item.from, item.to, item.mallType || "", tag, false);
-                if (result.allowed) success++;
+                if (result.allowed) successCount++;
             }
             renderUI();
-            showMessage(`✅ Batch: ${success} successful`, "success");
+            showMessage(`✅ Batch: ${successCount} successful (${availableLicenses} NEW licenses left)`, "success");
         };
         reader.readAsText(file);
     }
 
+    // FIXED: Reset Database function
     function resetDatabase() {
-        if (prompt("Admin password:") === ADMIN_PASSWORD) { resetToDefaults(); renderUI(); showMessage("✅ Database reset", "success"); }
-        else showMessage("❌ Wrong password", "error");
+        const password = prompt("Enter admin password to reset ALL data (transactions, licenses, mall types):");
+        if (password === ADMIN_PASSWORD) {
+            if (confirm("⚠️ WARNING: This will DELETE ALL DATA! Are you sure?")) {
+                resetToDefaults();
+                persistFullState();
+                renderUI();
+                showMessage("✅ Full system reset complete! 100 NEW licenses restored.", "success");
+            }
+        } else if (password !== null) {
+            showMessage("❌ Incorrect password!", "error");
+        }
     }
 
     function editLicenseCount() {
-        if (prompt("Admin password:") === ADMIN_PASSWORD) {
-            const newCount = prompt("New license count:", availableLicenses);
-            if (newCount && !isNaN(parseInt(newCount))) { availableLicenses = parseInt(newCount); renderUI(); showMessage(`✅ Licenses set to ${availableLicenses}`, "success"); }
-        } else showMessage("❌ Wrong password", "error");
+        const password = prompt("Enter admin password to edit NEW LICENSE count:");
+        if (password === ADMIN_PASSWORD) {
+            const newCount = prompt("Enter new number of NEW licenses available:", availableLicenses);
+            if (newCount !== null && !isNaN(parseInt(newCount))) {
+                availableLicenses = parseInt(newCount);
+                renderUI();
+                showMessage(`✅ License count updated to ${availableLicenses}`, "success");
+            } else if (newCount !== null) {
+                showMessage("❌ Invalid number!", "error");
+            }
+        } else if (password !== null) {
+            showMessage("❌ Incorrect password!", "error");
+        }
     }
 
-    function editRemarks(id) { const r = prompt("Remarks:", transactions.find(t => t.id === id)?.remarks); if (r !== null) updateRemarks(id, r); }
-    function deleteWithPassword(id) { if (prompt("Admin password:") === ADMIN_PASSWORD) deleteTransaction(id); else showMessage("❌ Wrong password", "error"); }
-    function showMessage(msg, type) { 
-        const div = document.getElementById("messageArea"); 
-        div.style.display = "block"; 
-        div.textContent = msg; 
-        div.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`; 
-        setTimeout(() => div.style.display = "none", 4000); 
+    function editRemarks(id) { 
+        const remarks = prompt("Remarks:", transactions.find(t => t.id === id)?.remarks || ""); 
+        if (remarks !== null) updateRemarks(id, remarks); 
     }
-    function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
-    function escapeAttr(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    
+    function deleteWithPassword(id) { 
+        const password = prompt("Admin password to delete transaction:");
+        if (password === ADMIN_PASSWORD) {
+            deleteTransaction(id); 
+        } else if (password !== null) {
+            showMessage("❌ Incorrect password!", "error"); 
+        }
+    }
+    
+    function showMessage(msg, type) { 
+        const msgDiv = document.getElementById("messageArea"); 
+        msgDiv.style.display = "block"; 
+        msgDiv.textContent = msg; 
+        msgDiv.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`; 
+        setTimeout(() => msgDiv.style.display = "none", 4000); 
+    }
+    
+    function escapeHtml(str) { 
+        if (!str) return ""; 
+        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
+    }
+    
+    function escapeAttr(str) { 
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
+    }
 
     // EVENT LISTENERS
     document.getElementById("executeBtn")?.addEventListener("click", () => {
@@ -1125,8 +1267,15 @@
         const to = document.getElementById("toCode").value;
         const mallType = document.getElementById("mallTypeSelect").value;
         const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
-        if (!from || !to) showMessage("Fill FROM and TO fields", "error");
-        else addTransaction(from, to, mallType, tag, true);
+        if (!from || !to) {
+            showMessage("❌ Please fill FROM and TO fields", "error");
+            return;
+        }
+        if (!tag) {
+            showMessage("❌ Please select a license tag", "error");
+            return;
+        }
+        addTransaction(from, to, mallType, tag, true);
         document.getElementById("fromCode").value = "";
         document.getElementById("toCode").value = "";
         document.getElementById("mallTypeSelect").value = "";
@@ -1148,6 +1297,19 @@
     document.getElementById("closeModalBtn")?.addEventListener("click", closeMallModal);
     document.querySelector(".close")?.addEventListener("click", closeMallModal);
     window.onclick = function(event) { if (event.target === document.getElementById("mallModal")) closeMallModal(); };
+    
+    // Enter key on modal input
+    document.getElementById("newMallName")?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") addMallFromModal();
+    });
+    
+    // Enter key on main fields for quick execution
+    document.getElementById("fromCode")?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") document.getElementById("executeBtn").click();
+    });
+    document.getElementById("toCode")?.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") document.getElementById("executeBtn").click();
+    });
     
     window.editRemarks = editRemarks;
     window.deleteWithPassword = deleteWithPassword;
