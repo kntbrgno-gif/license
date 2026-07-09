@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Fixed Storage</title>
+    <title>Terminal License Monitor · Correct License Logic</title>
     <style>
         * {
             box-sizing: border-box;
@@ -190,6 +190,12 @@
             color: #b0f0b0;
         }
 
+        .alert.info {
+            border-left-color: #3498db;
+            color: #aaddff;
+            background: #1a1a2c;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -235,6 +241,11 @@
         .status-warning {
             background: #4a3a1a;
             color: #ffde9c;
+        }
+
+        .status-info {
+            background: #1a2a3a;
+            color: #88ccff;
         }
 
         .scroll-table {
@@ -386,6 +397,11 @@
             gap: 8px;
             border: 1px solid #2ecc7166;
             color: #b9f6ca;
+            cursor: pointer;
+        }
+
+        .mall-chip:hover {
+            background: #2ecc7133;
         }
 
         .mall-chip button {
@@ -546,13 +562,22 @@
             color: #ff9e8f;
             border: 1px solid #ff6b6b;
         }
+
+        .used-badge {
+            background: #3a1a1a;
+            color: #ff9e8f;
+            padding: 0.1rem 0.4rem;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            margin-left: 0.3rem;
+        }
     </style>
 </head>
 <body>
 <div class="monitor-container">
     <div class="terminal-header">
-        <div class="title">⟡ LICENSE TRANSFER MONITOR · FIXED STORAGE ⟡</div>
-        <div class="badge">Auto-save to localStorage | Reliable persistence</div>
+        <div class="title">⟡ LICENSE TRANSFER MONITOR · CORRECT LOGIC ⟡</div>
+        <div class="badge">NEW LICENSE = always allowed | TRANSFER = only once per FROM</div>
     </div>
 
     <div class="grid-2col">
@@ -569,6 +594,7 @@
             <div class="form-group">
                 <label>📡 FROM TERMINAL CODE</label>
                 <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2">
+                <div id="fromStatus" style="font-size:0.7rem; margin-top:0.3rem; color:#8aa9d6;"></div>
             </div>
             
             <!-- TO Terminal -->
@@ -593,7 +619,7 @@
                 <label>🏷️ LICENSE ACTION TAG</label>
                 <div class="radio-group">
                     <label><input type="radio" name="licenseTag" value="new_license" checked> ✨ NEW LICENSE (Uses 1 license)</label>
-                    <label><input type="radio" name="licenseTag" value="transfer"> 🔄 TRANSFER (No license cost)</label>
+                    <label><input type="radio" name="licenseTag" value="transfer"> 🔄 TRANSFER (Free, but FROM can only be used once)</label>
                 </div>
             </div>
 
@@ -612,7 +638,7 @@
                     <span class="stat-value" id="statTotal">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">🔀 FROM Terminals Used:</span>
+                    <span class="stat-label">🔀 FROM Terminals Used (TRANSFER):</span>
                     <span class="stat-value" id="statFromCount">0</span>
                 </div>
                 <div class="stat-item">
@@ -650,7 +676,10 @@
 
             <div id="messageArea" class="alert" style="display: none;"></div>
             <div class="note">
-                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license
+                ⚠️ <strong>RULES:</strong><br>
+                • <strong>NEW LICENSE</strong> → Always allowed, consumes 1 license<br>
+                • <strong>TRANSFER</strong> → Free, but FROM terminal can only be used ONCE for TRANSFER<br>
+                • After a FROM is used in TRANSFER, it can still be used with NEW LICENSE
             </div>
         </div>
 
@@ -670,6 +699,7 @@
                             <option value="ALLOWED">✓ Allowed</option>
                             <option value="DENIED">✗ Denied</option>
                             <option value="WARNING">⚠️ Warning</option>
+                            <option value="INFO">ℹ️ Info</option>
                         </select>
                     </div>
                     <div>
@@ -757,7 +787,6 @@
     const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
     const STORAGE_KEY = "terminal_license_monitor";
 
-    // FIXED: Reliable storage function with error handling
     function persistFullState() {
         try {
             const dataToSave = {
@@ -766,43 +795,34 @@
                 mallTypes: mallTypes,
                 lastSaved: new Date().toISOString()
             };
-            
-            const jsonData = JSON.stringify(dataToSave);
-            localStorage.setItem(STORAGE_KEY, jsonData);
-            
-            // Verify the save worked
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
             const verifyData = localStorage.getItem(STORAGE_KEY);
             if (verifyData) {
                 const parsed = JSON.parse(verifyData);
                 if (parsed.transactions.length === transactions.length && 
                     parsed.availableLicenses === availableLicenses) {
-                    showStorageStatus("✅ Data saved to localStorage", "saved");
+                    showStorageStatus("✅ Data saved", "saved");
                     return true;
                 }
             }
-            showStorageStatus("⚠️ Data may not be saved correctly", "error");
             return false;
         } catch (e) {
             console.error("Storage save error:", e);
-            showStorageStatus("❌ Failed to save data: " + e.message, "error");
+            showStorageStatus("❌ Failed to save data", "error");
             return false;
         }
     }
 
-    // Show storage status message
     function showStorageStatus(message, type) {
         const statusDiv = document.getElementById("storageStatus");
         if (statusDiv) {
             statusDiv.textContent = message;
             statusDiv.className = "storage-status " + type;
             statusDiv.style.display = "block";
-            setTimeout(() => {
-                statusDiv.style.display = "none";
-            }, 3000);
+            setTimeout(() => { statusDiv.style.display = "none"; }, 3000);
         }
     }
 
-    // FIXED: Load data with validation
     function loadData() {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
@@ -811,30 +831,18 @@
                 transactions = parsed.transactions || [];
                 availableLicenses = parsed.availableLicenses !== undefined ? parsed.availableLicenses : 100;
                 mallTypes = parsed.mallTypes || [...DEFAULT_MALLS];
-                
-                // Ensure each transaction has required fields
                 transactions.forEach(t => { 
                     if (!t.remarks) t.remarks = "";
                     if (!t.mallType) t.mallType = "";
                     if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
                     if (!t.timestamp) t.timestamp = new Date().toLocaleString();
                 });
-                
-                console.log("Data loaded successfully:", {
-                    transactions: transactions.length,
-                    licenses: availableLicenses,
-                    mallTypes: mallTypes.length
-                });
-                
-                showStorageStatus("✅ Data loaded from localStorage", "saved");
             } else {
-                console.log("No stored data found, using defaults");
                 resetToDefaults();
             }
         } catch (e) {
             console.error("Load error:", e);
             resetToDefaults();
-            showStorageStatus("❌ Error loading data, using defaults", "error");
         }
         renderUI();
     }
@@ -851,8 +859,33 @@
         updateStats();
         updateLicenseDisplay();
         updateRecordCount();
-        // Save after every UI update
+        checkFromStatus();
         persistFullState();
+    }
+
+    function checkFromStatus() {
+        const fromCode = document.getElementById("fromCode").value.trim();
+        const statusDiv = document.getElementById("fromStatus");
+        if (fromCode) {
+            const usedInTransfer = isFromUsedInTransfer(fromCode);
+            if (usedInTransfer) {
+                statusDiv.innerHTML = `⚠️ FROM "${fromCode}" has been used in a TRANSFER. Can only use with NEW LICENSE now.`;
+                statusDiv.style.color = "#ffaa88";
+            } else {
+                statusDiv.innerHTML = `✅ FROM "${fromCode}" is available for TRANSFER or NEW LICENSE`;
+                statusDiv.style.color = "#94ffb4";
+            }
+        } else {
+            statusDiv.innerHTML = "";
+        }
+    }
+
+    function isFromUsedInTransfer(fromCode, excludeId = null) {
+        return transactions.some(t => 
+            t.fromCode === fromCode && 
+            t.tag === "transfer" && 
+            (excludeId === null || t.id !== excludeId)
+        );
     }
 
     function renderMallSelect() {
@@ -940,6 +973,7 @@
         if (statusText.includes("ALLOWED")) return "ALLOWED";
         if (statusText.includes("DENIED") || statusText.includes("NOT ALLOWED") || statusText.includes("NO LICENSES")) return "DENIED";
         if (statusText.includes("DUPLICATE") || statusText.includes("WARNING")) return "WARNING";
+        if (statusText.includes("INFO")) return "INFO";
         return "ALLOWED";
     }
 
@@ -997,7 +1031,9 @@
         }
         let html = "";
         for (const t of filtered) {
-            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText?.includes("DUPLICATE") ? "status-warning" : "status-allowed");
+            let statusClass = t.allowedFlag === false ? "status-denied" : 
+                            (t.statusText?.includes("DUPLICATE") ? "status-warning" : 
+                            (t.statusText?.includes("INFO") ? "status-info" : "status-allowed"));
             const tagDisplay = t.tag === "new_license" ? "✨ NEW LICENSE" : "🔄 TRANSFER";
             const fromUsedDisplay = t.tag === "transfer" ? (t.fromUsedBefore || "NO") : "—";
             const mallDisplay = t.mallType ? escapeHtml(t.mallType) : "—";
@@ -1059,11 +1095,7 @@
         return usedFrom;
     }
 
-    function isFromTerminalUsed(fromCode, excludeId = null) {
-        return transactions.some(t => t.fromCode === fromCode && t.tag === "transfer" && (excludeId === null || t.id !== excludeId));
-    }
-
-    // Main transaction function with storage
+    // CORRECTED: Main transaction function with proper logic
     function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
         console.log("=== EXECUTING TRANSACTION ===");
         console.log("From:", fromCode);
@@ -1085,7 +1117,8 @@
             return { allowed: false, message: "Same code" };
         }
         
-        const fromUsedBefore = isFromTerminalUsed(fNorm);
+        // Check if FROM has been used in a TRANSFER before
+        const fromUsedInTransfer = isFromUsedInTransfer(fNorm);
         const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
         
         let allowed = false;
@@ -1093,6 +1126,7 @@
         let message = "";
         let licenseConsumed = 0;
         
+        // NEW LICENSE: Always allowed (consumes license)
         if (tag === "new_license") {
             if (availableLicenses <= 0) {
                 if (showMsg) showMessage("❌ NO NEW LICENSES AVAILABLE! Please add more licenses.", "error");
@@ -1104,10 +1138,17 @@
             statusLabel = duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)";
             message = duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)";
         } 
+        // TRANSFER: Only allowed if FROM hasn't been used in a TRANSFER before
         else if (tag === "transfer") {
-            if (fromUsedBefore) {
-                if (showMsg) showMessage(`❌ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer.`, "error");
-                return { allowed: false, message: "FROM already used" };
+            if (fromUsedInTransfer) {
+                if (showMsg) {
+                    showMessage(`❌ TRANSFER REJECTED: FROM terminal "${fNorm}" has already been used in a TRANSFER. Use NEW LICENSE instead.`, "error");
+                }
+                return { 
+                    allowed: false, 
+                    message: "FROM already used in TRANSFER",
+                    statusLabel: "⛔ NOT ALLOWED (FROM USED IN TRANSFER)"
+                };
             }
             allowed = true;
             statusLabel = duplicateExists ? "⚠️ DUPLICATE (TRANSFER)" : "✓ ALLOWED (TRANSFER)";
@@ -1123,7 +1164,7 @@
             toCode: tNorm,
             mallType: mallType || "",
             tag: tag,
-            fromUsedBefore: tag === "transfer" ? (fromUsedBefore ? "YES" : "NO") : "N/A",
+            fromUsedBefore: tag === "transfer" ? (fromUsedInTransfer ? "YES" : "NO") : "N/A",
             timestamp: new Date().toLocaleString(),
             statusText: statusLabel,
             allowedFlag: allowed,
@@ -1137,18 +1178,17 @@
         console.log("Available Licenses after:", availableLicenses);
         console.log("Total transactions:", transactions.length);
         
-        // Force save immediately
-        const saved = persistFullState();
+        persistFullState();
         
         if (showMsg) {
             let msg = `✔️ ${message}`;
             if (tag === "new_license") msg += ` (${availableLicenses} NEW licenses left)`;
-            if (saved) msg += " 💾 Saved!";
+            if (tag === "transfer") msg += " (FROM can now only be used with NEW LICENSE)";
             showMessage(msg, "success");
         }
         
         renderUI();
-        return { allowed, message, saved };
+        return { allowed, message };
     }
 
     function deleteTransaction(id) {
@@ -1172,7 +1212,6 @@
         }
     }
 
-    // BACKUP FUNCTIONS
     function fullBackup() {
         const backupData = { 
             version: "1.0", 
@@ -1292,7 +1331,7 @@
     }
 
     function resetDatabase() {
-        const password = prompt("Enter admin password to reset ALL data (admin123):");
+        const password = prompt("Enter admin password (admin123):");
         if (password === ADMIN_PASSWORD) {
             if (confirm("⚠️ WARNING: This will DELETE ALL DATA! Are you sure?")) {
                 resetToDefaults();
@@ -1355,17 +1394,10 @@
 
     // EXECUTE BUTTON
     document.getElementById("executeBtn")?.addEventListener("click", function() {
-        console.log("=== EXECUTE BUTTON CLICKED ===");
-        
         const from = document.getElementById("fromCode").value;
         const to = document.getElementById("toCode").value;
         const mallType = document.getElementById("mallTypeSelect").value;
         const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
-        
-        console.log("From:", from);
-        console.log("To:", to);
-        console.log("Mall Type:", mallType);
-        console.log("Tag:", tag);
         
         if (!from || !to) {
             showMessage("❌ Please fill FROM and TO fields", "error");
@@ -1382,7 +1414,13 @@
             document.getElementById("fromCode").value = "";
             document.getElementById("toCode").value = "";
             document.getElementById("mallTypeSelect").value = "";
+            document.getElementById("fromStatus").innerHTML = "";
         }
+    });
+    
+    // Live status check on FROM input
+    document.getElementById("fromCode")?.addEventListener("input", function() {
+        checkFromStatus();
     });
     
     document.getElementById("applyFiltersBtn")?.addEventListener("click", applyFilters);
@@ -1409,7 +1447,6 @@
     window.editRemarks = editRemarks;
     window.deleteWithPassword = deleteWithPassword;
     
-    // Load data on startup
     loadData();
 </script>
 </body>
