@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Separate Mall Type Management</title>
+    <title>Terminal License Monitor · Fixed License Deduction</title>
     <style>
         * {
             box-sizing: border-box;
@@ -523,24 +523,13 @@
             color: #b3f0c0;
             margin: 0.5rem 0;
         }
-
-        .edit-mode-badge {
-            font-size: 0.7rem;
-            color: #ffaa88;
-            margin-left: 0.5rem;
-        }
-
-        .btn-sm {
-            padding: 0.2rem 0.6rem;
-            font-size: 0.65rem;
-        }
     </style>
 </head>
 <body>
 <div class="monitor-container">
     <div class="terminal-header">
-        <div class="title">⟡ LICENSE TRANSFER MONITOR · SEPARATE MALL TYPE ⟡</div>
-        <div class="badge">TO Terminal + Mall Type (independent) | Edit mall list via modal</div>
+        <div class="title">⟡ LICENSE TRANSFER MONITOR · FIXED LICENSE DEDUCTION ⟡</div>
+        <div class="badge">NEW LICENSE deducts 1 | TRANSFER is free</div>
     </div>
 
     <div class="grid-2col">
@@ -559,22 +548,21 @@
                 <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2">
             </div>
             
-            <!-- TO Terminal (separate field) -->
+            <!-- TO Terminal -->
             <div class="form-group">
                 <label>🎯 TO TERMINAL CODE</label>
                 <input type="text" id="toCode" class="terminal-input" placeholder="e.g., TERM-YYYY-C3D4">
             </div>
 
-            <!-- MALL TYPE (separate field with dropdown) -->
+            <!-- MALL TYPE -->
             <div class="form-group">
-                <label>🏬 MALL TYPE (separate attribute)</label>
+                <label>🏬 MALL TYPE</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <select id="mallTypeSelect" class="mall-select-input" style="flex: 2;">
                         <option value="">-- Select Mall Type --</option>
                     </select>
-                    <button id="manageMallTypesBtn" class="btn-icon" style="background:#2c3e2f; white-space: nowrap;">✏️ Manage Mall List</button>
+                    <button id="manageMallTypesBtn" class="btn-icon" style="background:#2c3e2f; white-space: nowrap;">✏️ Manage</button>
                 </div>
-                <div class="note" style="margin-top: 0.3rem;">💡 Select a mall type from the dropdown above</div>
             </div>
 
             <!-- License Action -->
@@ -607,7 +595,7 @@
                 </div>
             </div>
 
-            <!-- Backup Section -->
+            <!-- Backup -->
             <div class="backup-area">
                 <label>💾 FULL BACKUP & RESTORE</label>
                 <div class="button-group">
@@ -615,7 +603,6 @@
                     <button id="fullRestoreBtn" class="secondary">📂 RESTORE FROM BACKUP</button>
                 </div>
                 <input type="file" id="restoreFile" accept=".json" style="display: none;">
-                <div class="note">💾 Backup includes: Transactions + License count + Mall types</div>
             </div>
 
             <!-- Export/Import -->
@@ -637,8 +624,7 @@
 
             <div id="messageArea" class="alert" style="display: none;"></div>
             <div class="note">
-                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license<br>
-                📌 Mall type is recorded separately from TO terminal
+                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license
             </div>
         </div>
 
@@ -652,7 +638,7 @@
             <div class="filter-bar">
                 <div class="filter-row">
                     <div>
-                        <div class="filter-label">🔍 Filter by STATUS</div>
+                        <div class="filter-label">Filter by STATUS</div>
                         <select id="filterStatus" class="filter-select">
                             <option value="ALL">All Statuses</option>
                             <option value="ALLOWED">✓ Allowed</option>
@@ -661,7 +647,7 @@
                         </select>
                     </div>
                     <div>
-                        <div class="filter-label">🏷️ Filter by TAG</div>
+                        <div class="filter-label">Filter by TAG</div>
                         <select id="filterTag" class="filter-select">
                             <option value="ALL">All Tags</option>
                             <option value="new_license">✨ NEW LICENSE</option>
@@ -669,21 +655,21 @@
                         </select>
                     </div>
                     <div>
-                        <div class="filter-label">🏬 Filter by MALL TYPE</div>
-                        <input type="text" id="filterMallType" class="filter-input" placeholder="Mall type contains...">
+                        <div class="filter-label">Filter by MALL TYPE</div>
+                        <input type="text" id="filterMallType" class="filter-input" placeholder="Mall type...">
                     </div>
                 </div>
                 <div class="filter-row">
                     <div>
-                        <div class="filter-label">📝 Filter by REMARKS</div>
-                        <input type="text" id="filterRemarks" class="filter-input" placeholder="Search in remarks...">
+                        <div class="filter-label">Filter by REMARKS</div>
+                        <input type="text" id="filterRemarks" class="filter-input" placeholder="Search remarks...">
                     </div>
                     <div>
-                        <div class="filter-label">📡 Filter by FROM TERMINAL</div>
+                        <div class="filter-label">Filter by FROM</div>
                         <input type="text" id="filterFrom" class="filter-input" placeholder="FROM code...">
                     </div>
                     <div>
-                        <div class="filter-label">🎯 Filter by TO TERMINAL</div>
+                        <div class="filter-label">Filter by TO</div>
                         <input type="text" id="filterTo" class="filter-input" placeholder="TO code...">
                     </div>
                 </div>
@@ -695,7 +681,7 @@
             </div>
 
             <div class="scroll-table">
-                <table id="dataTable">
+                <table>
                     <thead>
                         <tr>
                             <th>FROM</th><th>TO</th><th>🏬 MALL TYPE</th><th>Tag</th><th>FROM Used Before?</th><th>Timestamp</th><th>Status</th><th>Remarks</th><th>Actions</th>
@@ -715,9 +701,7 @@
             <h2>🏬 Manage Mall Types</h2>
             <span class="close">&times;</span>
         </div>
-        <div class="mall-list-modal" id="mallListModal">
-            <!-- Dynamic mall list will appear here -->
-        </div>
+        <div class="mall-list-modal" id="mallListModal"></div>
         <div style="margin-top: 1rem;">
             <input type="text" id="newMallName" class="modal-input" placeholder="Enter new mall type...">
             <div class="button-group" style="margin-top: 0.5rem;">
@@ -725,7 +709,7 @@
                 <button id="closeModalBtn" class="secondary" style="flex:1;">Close</button>
             </div>
         </div>
-        <div class="note" style="margin-top: 1rem;">💡 Click ✏️ to edit, 🗑️ to delete. Changes auto-save.</div>
+        <div class="note">💡 Click ✏️ to edit, 🗑️ to delete</div>
     </div>
 </div>
 
@@ -748,7 +732,7 @@
 
     function persistFullState() {
         localStorage.setItem("terminal_license_monitor", JSON.stringify({
-            transactions, availableLicenses, mallTypes, lastBackup: new Date().toISOString()
+            transactions, availableLicenses, mallTypes
         }));
     }
 
@@ -833,7 +817,7 @@
             btn.onclick = (e) => {
                 e.stopPropagation();
                 const mallVal = btn.getAttribute('data-mall');
-                if (confirm(`Remove mall type "${mallVal}"? This will clear it from existing transactions.`)) {
+                if (confirm(`Remove mall type "${mallVal}"?`)) {
                     mallTypes = mallTypes.filter(m => m !== mallVal);
                     transactions.forEach(t => { if (t.mallType === mallVal) t.mallType = ""; });
                     renderUI();
@@ -942,7 +926,7 @@
                 <td style="font-size:0.7rem;">${escapeHtml(t.timestamp)}</td>
                 <td><span class="status-badge ${statusClass}">${escapeHtml(t.statusText)}</span></td>
                 <td>${escapeHtml(t.remarks) || '<em style="color:#6c7a96;">—</em>'}</td>
-                <td class="action-icons">
+                <td>
                     <button class="small secondary" onclick="editRemarks('${t.id}')">✏️</button>
                     <button class="small danger" onclick="deleteWithPassword('${t.id}')">🗑️</button>
                 </td>
@@ -977,7 +961,7 @@
             licenseStatus.innerHTML = "⚠️ LOW LICENSES! Only " + availableLicenses + " NEW licenses left";
             licenseStatus.style.color = "#ffaa88";
         } else if (availableLicenses <= 0) {
-            licenseStatus.innerHTML = "❌ NO NEW LICENSES LEFT! Add more to use NEW LICENSE tag.";
+            licenseStatus.innerHTML = "❌ NO NEW LICENSES LEFT!";
             licenseStatus.style.color = "#ff6b6b";
         } else {
             licenseStatus.innerHTML = "✅ " + availableLicenses + " NEW licenses available";
@@ -995,77 +979,86 @@
         return transactions.some(t => t.fromCode === fromCode && t.tag === "transfer" && (excludeId === null || t.id !== excludeId));
     }
 
-    function evaluateTransaction(fromCode, toCode, tag) {
+    // FIXED: Main transaction function with proper license deduction
+    function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
+        // Validate inputs
         const fNorm = fromCode.trim();
         const tNorm = toCode.trim();
-        if (!fNorm || !tNorm) return { allowed: false, message: "Empty FROM or TO", statusLabel: "INVALID INPUT" };
-        if (fNorm === tNorm) return { allowed: false, message: "FROM cannot be same as TO", statusLabel: "SAME CODE" };
+        
+        if (!fNorm || !tNorm) {
+            if (showMsg) showMessage("❌ Please fill both FROM and TO fields", "error");
+            return { allowed: false, message: "Empty fields" };
+        }
+        
+        if (fNorm === tNorm) {
+            if (showMsg) showMessage("❌ FROM and TO cannot be the same", "error");
+            return { allowed: false, message: "Same code" };
+        }
+        
+        // Check if FROM terminal was used before in TRANSFER
         const fromUsedBefore = isFromTerminalUsed(fNorm);
         const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
         
-        if (tag === "new_license") {
-            if (availableLicenses <= 0) return { allowed: false, message: "No NEW licenses available!", statusLabel: "NO LICENSES" };
-            return { 
-                allowed: true, 
-                message: duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)", 
-                statusLabel: duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)" 
-            };
-        } else if (tag === "transfer") {
-            if (fromUsedBefore) return { 
-                allowed: false, 
-                message: `⛔ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer.`, 
-                statusLabel: "⛔ NOT ALLOWED (FROM USED)" 
-            };
-            return { 
-                allowed: true, 
-                message: duplicateExists ? "⚠️ Duplicate but first transfer for FROM terminal" : "✅ TRANSFER allowed (no license cost)", 
-                statusLabel: duplicateExists ? "⚠️ DUPLICATE (TRANSFER)" : "✓ ALLOWED (TRANSFER)" 
-            };
-        }
-        return { allowed: false, message: "Invalid tag", statusLabel: "ERROR" };
-    }
-
-    function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
-        const evalResult = evaluateTransaction(fromCode, toCode, tag);
+        let allowed = false;
+        let statusLabel = "";
+        let message = "";
         let licenseConsumed = 0;
         
-        // Deduct license if it's a NEW LICENSE and allowed
-        if (evalResult.allowed && tag === "new_license") {
-            if (availableLicenses > 0) {
-                availableLicenses--;
-                licenseConsumed = 1;
-            } else {
-                evalResult.allowed = false;
-                evalResult.message = "❌ No NEW licenses left!";
-                evalResult.statusLabel = "NO LICENSES";
+        // Handle NEW LICENSE
+        if (tag === "new_license") {
+            // Check if licenses are available
+            if (availableLicenses <= 0) {
+                if (showMsg) showMessage("❌ NO NEW LICENSES AVAILABLE! Please add more licenses.", "error");
+                return { allowed: false, message: "No licenses" };
             }
+            
+            // Deduct license
+            availableLicenses--;
+            licenseConsumed = 1;
+            allowed = true;
+            statusLabel = duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)";
+            message = duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)";
+            
+        } 
+        // Handle TRANSFER
+        else if (tag === "transfer") {
+            if (fromUsedBefore) {
+                if (showMsg) showMessage(`❌ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer.`, "error");
+                return { allowed: false, message: "FROM already used" };
+            }
+            allowed = true;
+            statusLabel = duplicateExists ? "⚠️ DUPLICATE (TRANSFER)" : "✓ ALLOWED (TRANSFER)";
+            message = duplicateExists ? "⚠️ Duplicate but first transfer for FROM terminal" : "✅ TRANSFER allowed (no license cost)";
+        } else {
+            if (showMsg) showMessage("❌ Invalid license tag", "error");
+            return { allowed: false, message: "Invalid tag" };
         }
         
+        // Create transaction record
         const newRecord = {
             id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
-            fromCode: fromCode.trim(),
-            toCode: toCode.trim(),
+            fromCode: fNorm,
+            toCode: tNorm,
             mallType: mallType || "",
             tag: tag,
-            fromUsedBefore: tag === "transfer" ? (isFromTerminalUsed(fromCode.trim()) ? "YES" : "NO") : "N/A",
+            fromUsedBefore: tag === "transfer" ? (fromUsedBefore ? "YES" : "NO") : "N/A",
             timestamp: new Date().toLocaleString(),
-            statusText: evalResult.statusLabel,
-            allowedFlag: evalResult.allowed,
+            statusText: statusLabel,
+            allowedFlag: allowed,
             remarks: "",
             licenseConsumed: licenseConsumed
         };
+        
         transactions.unshift(newRecord);
+        
         if (showMsg) {
-            if (evalResult.allowed) {
-                let msg = `✔️ ${evalResult.message}`;
-                if (tag === "new_license") msg += ` (${availableLicenses} NEW licenses left)`;
-                showMessage(msg, "success");
-            } else {
-                showMessage(`❌ ${evalResult.message}`, "error");
-            }
+            let msg = `✔️ ${message}`;
+            if (tag === "new_license") msg += ` (${availableLicenses} NEW licenses left)`;
+            showMessage(msg, "success");
         }
+        
         renderUI();
-        return evalResult;
+        return { allowed, message };
     }
 
     function deleteTransaction(id) {
@@ -1106,7 +1099,7 @@
         reader.onload = function(e) {
             try {
                 const backupData = JSON.parse(e.target.result);
-                if (confirm(`⚠️ This will REPLACE all current data!\n\nRestore ${backupData.transactions?.length || 0} transactions and ${backupData.mallTypes?.length || 0} mall types?\n\nProceed?`)) {
+                if (confirm(`⚠️ This will REPLACE all current data!\n\nRestore ${backupData.transactions?.length || 0} transactions?\n\nProceed?`)) {
                     transactions = backupData.transactions || [];
                     availableLicenses = backupData.availableLicenses !== undefined ? backupData.availableLicenses : 100;
                     mallTypes = backupData.mallTypes || [...DEFAULT_MALLS];
@@ -1199,9 +1192,8 @@
         reader.readAsText(file);
     }
 
-    // FIXED: Reset Database function
     function resetDatabase() {
-        const password = prompt("Enter admin password to reset ALL data (transactions, licenses, mall types):");
+        const password = prompt("Enter admin password to reset ALL data (admin123):");
         if (password === ADMIN_PASSWORD) {
             if (confirm("⚠️ WARNING: This will DELETE ALL DATA! Are you sure?")) {
                 resetToDefaults();
@@ -1215,7 +1207,7 @@
     }
 
     function editLicenseCount() {
-        const password = prompt("Enter admin password to edit NEW LICENSE count:");
+        const password = prompt("Enter admin password (admin123):");
         if (password === ADMIN_PASSWORD) {
             const newCount = prompt("Enter new number of NEW licenses available:", availableLicenses);
             if (newCount !== null && !isNaN(parseInt(newCount))) {
@@ -1236,7 +1228,7 @@
     }
     
     function deleteWithPassword(id) { 
-        const password = prompt("Admin password to delete transaction:");
+        const password = prompt("Admin password (admin123):");
         if (password === ADMIN_PASSWORD) {
             deleteTransaction(id); 
         } else if (password !== null) {
@@ -1267,6 +1259,7 @@
         const to = document.getElementById("toCode").value;
         const mallType = document.getElementById("mallTypeSelect").value;
         const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
+        
         if (!from || !to) {
             showMessage("❌ Please fill FROM and TO fields", "error");
             return;
@@ -1275,10 +1268,8 @@
             showMessage("❌ Please select a license tag", "error");
             return;
         }
+        
         addTransaction(from, to, mallType, tag, true);
-        document.getElementById("fromCode").value = "";
-        document.getElementById("toCode").value = "";
-        document.getElementById("mallTypeSelect").value = "";
     });
     
     document.getElementById("applyFiltersBtn")?.addEventListener("click", applyFilters);
@@ -1298,17 +1289,8 @@
     document.querySelector(".close")?.addEventListener("click", closeMallModal);
     window.onclick = function(event) { if (event.target === document.getElementById("mallModal")) closeMallModal(); };
     
-    // Enter key on modal input
     document.getElementById("newMallName")?.addEventListener("keypress", (e) => {
         if (e.key === "Enter") addMallFromModal();
-    });
-    
-    // Enter key on main fields for quick execution
-    document.getElementById("fromCode")?.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") document.getElementById("executeBtn").click();
-    });
-    document.getElementById("toCode")?.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") document.getElementById("executeBtn").click();
     });
     
     window.editRemarks = editRemarks;
