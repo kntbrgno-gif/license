@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Fixed License Deduction</title>
+    <title>Terminal License Monitor</title>
     <style>
         * {
             box-sizing: border-box;
@@ -25,7 +25,33 @@
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.8);
             border: 1px solid #2a2f3f;
             overflow: hidden;
+            position: relative;
         }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: #0b0e17ee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.8rem;
+            z-index: 500;
+            color: #b3f0c0;
+            font-family: monospace;
+        }
+
+        .spinner {
+            width: 34px;
+            height: 34px;
+            border: 3px solid #1e2a3a;
+            border-top-color: #2ecc71;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .terminal-header {
             background: #0f111c;
@@ -108,7 +134,7 @@
             outline: none;
         }
 
-        .terminal-input:focus, .mall-select-input:focus {
+        .terminal-input:focus, .mall-select-input:focus, .filter-input:focus, .filter-select:focus, .modal-input:focus {
             border-color: #2ecc71;
             box-shadow: 0 0 0 3px #2ecc7122;
         }
@@ -135,7 +161,7 @@
         }
 
         button {
-            background: #1e2a3a;
+            background: #11161f;
             border: none;
             font-weight: bold;
             padding: 0.8rem 1.8rem;
@@ -145,7 +171,16 @@
             transition: 0.2s;
             color: #e2e8f0;
             border-bottom: 2px solid #2ecc71;
-            background: #11161f;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:focus-visible {
+            outline: 2px solid #2ecc71;
+            outline-offset: 2px;
         }
 
         button.primary {
@@ -154,7 +189,7 @@
             color: #c0ffd8;
         }
 
-        button.primary:hover {
+        button.primary:hover:not(:disabled) {
             background: #2c4a3e;
             transform: translateY(-1px);
         }
@@ -222,20 +257,9 @@
             font-weight: bold;
         }
 
-        .status-denied {
-            background: #3c1e1e;
-            color: #ff9e8f;
-        }
-
-        .status-allowed {
-            background: #1c3f2a;
-            color: #94ffb4;
-        }
-
-        .status-warning {
-            background: #4a3a1a;
-            color: #ffde9c;
-        }
+        .status-denied { background: #3c1e1e; color: #ff9e8f; }
+        .status-allowed { background: #1c3f2a; color: #94ffb4; }
+        .status-warning { background: #4a3a1a; color: #ffde9c; }
 
         .scroll-table {
             max-height: 550px;
@@ -247,99 +271,6 @@
             color: #6c7a96;
             margin-top: 1rem;
             text-align: center;
-        }
-
-        .mall-library {
-            background: #080b14;
-            border-radius: 1rem;
-            padding: 1rem;
-            margin: 1rem 0 0.5rem 0;
-            border: 1px solid #2ecc7133;
-        }
-
-        .mall-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-
-        .mall-badge-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 12px 0 8px 0;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .mall-chip {
-            background: #1a2332;
-            border-radius: 32px;
-            padding: 0.3rem 0.9rem;
-            font-size: 0.7rem;
-            font-family: monospace;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid #2ecc7166;
-            color: #b9f6ca;
-        }
-
-        .mall-chip button {
-            background: none;
-            border: none;
-            padding: 0;
-            margin: 0;
-            color: #ffaa88;
-            font-size: 0.8rem;
-            cursor: pointer;
-            border-bottom: none;
-            width: 20px;
-            height: 20px;
-            line-height: 1;
-        }
-
-        .mall-chip button:hover {
-            color: #ff6b6b;
-            transform: none;
-        }
-
-        .mall-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn-icon {
-            padding: 0.4rem 1rem;
-            font-size: 0.7rem;
-        }
-
-        .upload-area, .cloud-actions, .backup-area {
-            background: #080b14;
-            padding: 1rem;
-            border-radius: 1rem;
-            margin-top: 1rem;
-            border: 1px dashed #2ecc71;
-        }
-
-        .backup-area {
-            border-color: #3498db;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        button.small {
-            padding: 0.3rem 0.8rem;
-            font-size: 0.7rem;
         }
 
         .stats {
@@ -443,6 +374,37 @@
             text-align: center;
         }
 
+        .mall-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            padding: 0.4rem 1rem;
+            font-size: 0.7rem;
+        }
+
+        .upload-area, .cloud-actions, .backup-area {
+            background: #080b14;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-top: 1rem;
+            border: 1px dashed #2ecc71;
+        }
+
+        .backup-area { border-color: #3498db; }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button.small { padding: 0.3rem 0.8rem; font-size: 0.7rem; }
+
         .modal {
             display: none;
             position: fixed;
@@ -475,10 +437,7 @@
             padding-bottom: 0.5rem;
         }
 
-        .modal-header h2 {
-            margin: 0;
-            color: #2ecc71;
-        }
+        .modal-header h2 { margin: 0; color: #2ecc71; font-size: 1.2rem; }
 
         .close {
             color: #ff6b6b;
@@ -488,9 +447,7 @@
             line-height: 1;
         }
 
-        .close:hover {
-            color: #ff0000;
-        }
+        .close:hover { color: #ff0000; }
 
         .mall-list-modal {
             max-height: 300px;
@@ -508,10 +465,7 @@
             border-radius: 0.5rem;
         }
 
-        .mall-item-modal span {
-            font-family: monospace;
-            color: #b3f0c0;
-        }
+        .mall-item-modal span { font-family: monospace; color: #b3f0c0; }
 
         .modal-input {
             width: 100%;
@@ -523,12 +477,19 @@
             color: #b3f0c0;
             margin: 0.5rem 0;
         }
+
+        .modal-message { color: #ccd6f0; font-size: 0.9rem; line-height: 1.4; margin: 0 0 0.5rem 0; }
     </style>
 </head>
 <body>
 <div class="monitor-container">
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div>Loading saved data…</div>
+    </div>
+
     <div class="terminal-header">
-        <div class="title">⟡ LICENSE TRANSFER MONITOR · FIXED LICENSE DEDUCTION ⟡</div>
+        <div class="title">⟡ LICENSE TRANSFER MONITOR ⟡</div>
         <div class="badge">NEW LICENSE deducts 1 | TRANSFER is free</div>
     </div>
 
@@ -538,25 +499,25 @@
             <div class="license-counter">
                 <div class="license-number" id="licenseCount">0</div>
                 <div class="license-label">NEW LICENSE REMAINING</div>
-                <button id="editLicenseBtn" style="background:#1e2f2a; margin-top: 6px; padding: 0.3rem 0.8rem; font-size: 0.7rem;">✏️ EDIT LICENSE COUNT</button>
+                <button id="editLicenseBtn" class="btn-icon" style="background:#1e2f2a; margin-top: 6px;">✏️ EDIT LICENSE COUNT</button>
                 <div class="license-label" style="margin-top: 0.5rem; font-size: 0.7rem;" id="licenseStatus"></div>
             </div>
 
             <!-- FROM Terminal -->
-            <div class="form-group">
-                <label>📡 FROM TERMINAL CODE</label>
+            <div class="form-group" id="fromFieldGroup">
+                <label for="fromCode">📡 FROM TERMINAL CODE</label>
                 <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2">
             </div>
-            
+
             <!-- TO Terminal -->
             <div class="form-group">
-                <label>🎯 TO TERMINAL CODE</label>
+                <label for="toCode">🎯 TO TERMINAL CODE</label>
                 <input type="text" id="toCode" class="terminal-input" placeholder="e.g., TERM-YYYY-C3D4">
             </div>
 
             <!-- MALL TYPE -->
             <div class="form-group">
-                <label>🏬 MALL TYPE</label>
+                <label for="mallTypeSelect">🏬 MALL TYPE</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <select id="mallTypeSelect" class="mall-select-input" style="flex: 2;">
                         <option value="">-- Select Mall Type --</option>
@@ -617,14 +578,16 @@
 
             <!-- Batch Upload -->
             <div class="upload-area">
-                <label>📁 BATCH UPLOAD (CSV)</label>
+                <label for="uploadFile">📁 BATCH UPLOAD (CSV: from,to,mallType,tag)</label>
                 <input type="file" id="uploadFile" accept=".csv,.json" class="file-input">
                 <button id="uploadBtn" class="secondary" style="margin-top: 0.5rem; width: 100%;">📤 UPLOAD & PROCESS</button>
             </div>
 
-            <div id="messageArea" class="alert" style="display: none;"></div>
+            <div id="messageArea" class="alert" role="status"></div>
             <div class="note">
-                ⚠️ TRANSFER = free (FROM must be unused) | NEW LICENSE = consumes 1 license
+                ⚠️ Both FROM and TO are always required. NEW LICENSE consumes 1 license; TRANSFER is free.<br>
+                Any terminal code that has appeared before (as FROM or TO, under either tag) can be used as FROM in a TRANSFER — but only once, ever.<br>
+                🔒 Admin actions are password-gated in this UI for accidental-click protection only — the password lives in the page source, so treat it as a soft lock, not real security.
             </div>
         </div>
 
@@ -699,7 +662,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>🏬 Manage Mall Types</h2>
-            <span class="close">&times;</span>
+            <span class="close" id="mallModalClose">&times;</span>
         </div>
         <div class="mall-list-modal" id="mallListModal"></div>
         <div style="margin-top: 1rem;">
@@ -713,47 +676,85 @@
     </div>
 </div>
 
+<!-- Generic dialog used in place of alert()/confirm()/prompt(), which don't run in this environment -->
+<div id="dialogModal" class="modal">
+    <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+            <h2 id="dialogTitle">Title</h2>
+            <span class="close" id="dialogClose">&times;</span>
+        </div>
+        <p id="dialogMessage" class="modal-message"></p>
+        <input type="text" id="dialogInput" class="modal-input" style="display:none;">
+        <div class="button-group">
+            <button id="dialogConfirmBtn" class="primary" style="flex:1;">OK</button>
+            <button id="dialogCancelBtn" class="secondary" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // GLOBAL STATE
+(function () {
+    "use strict";
+
+    // ---------- GLOBAL STATE ----------
     let transactions = [];
     let availableLicenses = 100;
     let mallTypes = [];
-    let currentFilters = {
-        status: "ALL",
-        tag: "ALL",
-        remarks: "",
-        fromCode: "",
-        toCode: "",
-        mallType: ""
-    };
-    
-    const ADMIN_PASSWORD = "admin123";
-    const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
+    let currentFilters = { status: "ALL", tag: "ALL", remarks: "", fromCode: "", toCode: "", mallType: "" };
 
-    function persistFullState() {
-        localStorage.setItem("terminal_license_monitor", JSON.stringify({
-            transactions, availableLicenses, mallTypes
-        }));
+    const ADMIN_PASSWORD = "admin123"; // UI-level gate only — visible in page source, not real auth.
+    const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
+    const STORAGE_KEY = "license-monitor-state";
+    const STORAGE_TIMEOUT_MS = 8000;
+
+    /** Wraps a promise so it can never hang the UI forever. */
+    function withTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Storage timed out")), ms))
+        ]);
     }
 
-    function loadData() {
-        const stored = localStorage.getItem("terminal_license_monitor");
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                transactions = parsed.transactions || [];
-                availableLicenses = parsed.availableLicenses !== undefined ? parsed.availableLicenses : 100;
-                mallTypes = parsed.mallTypes || [...DEFAULT_MALLS];
-                transactions.forEach(t => { 
-                    if (!t.remarks) t.remarks = "";
-                    if (!t.mallType) t.mallType = "";
-                    if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
-                });
-            } catch(e) { resetToDefaults(); }
-        } else {
+    // ---------- STORAGE ----------
+    async function persistFullState() {
+        try {
+            await withTimeout(
+                window.storage.set(STORAGE_KEY, JSON.stringify({ transactions, availableLicenses, mallTypes }), false),
+                STORAGE_TIMEOUT_MS
+            );
+            return true;
+        } catch (e) {
+            showMessage("⚠️ Change applied on screen, but saving to storage failed or timed out — it may not persist after a refresh.", "error");
+            return false;
+        }
+    }
+
+    /**
+     * Re-render immediately (so the UI never waits on storage), then persist
+     * in the background. Use after any state mutation.
+     */
+    async function commit() {
+        renderUI();
+        await persistFullState();
+    }
+
+    async function loadData() {
+        try {
+            const res = await withTimeout(window.storage.get(STORAGE_KEY, false), STORAGE_TIMEOUT_MS);
+            if (res && res.value) {
+                const parsed = JSON.parse(res.value);
+                transactions = Array.isArray(parsed.transactions) ? parsed.transactions : [];
+                availableLicenses = typeof parsed.availableLicenses === "number" ? parsed.availableLicenses : 100;
+                mallTypes = Array.isArray(parsed.mallTypes) && parsed.mallTypes.length ? parsed.mallTypes : [...DEFAULT_MALLS];
+            } else {
+                resetToDefaults();
+            }
+        } catch (e) {
             resetToDefaults();
         }
+        transactions.forEach(normalizeTransaction);
         renderUI();
+        hideLoadingOverlay();
     }
 
     function resetToDefaults() {
@@ -762,22 +763,40 @@
         mallTypes = [...DEFAULT_MALLS];
     }
 
+    function normalizeTransaction(t) {
+        if (!t.remarks) t.remarks = "";
+        if (!t.mallType) t.mallType = "";
+        if (!t.id) t.id = generateId();
+    }
+
+    function generateId() {
+        return Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function hideLoadingOverlay() {
+        const overlay = document.getElementById("loadingOverlay");
+        if (overlay) overlay.style.display = "none";
+    }
+
+    // ---------- RENDER (pure — never persists) ----------
     function renderUI() {
         renderMallSelect();
         renderFilteredTable();
         updateStats();
         updateLicenseDisplay();
+        updateFilterStats();
         updateRecordCount();
-        persistFullState();
     }
 
     function renderMallSelect() {
         const select = document.getElementById("mallTypeSelect");
         if (!select) return;
+        const previousValue = select.value;
         select.innerHTML = '<option value="">-- Select Mall Type --</option>';
         mallTypes.forEach(mall => {
             select.innerHTML += `<option value="${escapeAttr(mall)}">${escapeHtml(mall)}</option>`;
         });
+        if (mallTypes.includes(previousValue)) select.value = previousValue;
     }
 
     function renderModalMallList() {
@@ -791,38 +810,40 @@
             <div class="mall-item-modal">
                 <span>${escapeHtml(mall)}</span>
                 <div>
-                    <button class="small secondary edit-modal-mall" data-mall="${escapeAttr(mall)}" data-index="${idx}" style="margin-right:5px;">✏️ Edit</button>
-                    <button class="small danger delete-modal-mall" data-mall="${escapeAttr(mall)}" data-index="${idx}">🗑️ Delete</button>
+                    <button class="small secondary edit-modal-mall" data-index="${idx}" style="margin-right:5px;">✏️ Edit</button>
+                    <button class="small danger delete-modal-mall" data-index="${idx}">🗑️ Delete</button>
                 </div>
             </div>
         `).join("");
-        
-        document.querySelectorAll('.edit-modal-mall').forEach(btn => {
-            btn.onclick = (e) => {
+
+        container.querySelectorAll(".edit-modal-mall").forEach(btn => {
+            btn.onclick = async (e) => {
                 e.stopPropagation();
-                const oldVal = btn.getAttribute('data-mall');
-                const newVal = prompt("Edit mall type:", oldVal);
-                if (newVal && newVal.trim() !== "" && newVal !== oldVal) {
-                    const idx = mallTypes.findIndex(m => m === oldVal);
-                    if (idx !== -1) { 
-                        mallTypes[idx] = newVal.trim();
-                        transactions.forEach(t => { if (t.mallType === oldVal) t.mallType = newVal.trim(); });
-                        renderUI();
-                        showMessage(`Mall type updated: ${newVal}`, "success");
-                    }
-                }
+                const idx = Number(btn.getAttribute("data-index"));
+                const oldVal = mallTypes[idx];
+                const newVal = await dialog({ title: "Edit mall type", inputType: "text", defaultValue: oldVal, confirmText: "Save" });
+                if (newVal === null) return;
+                const trimmed = newVal.trim();
+                if (!trimmed || trimmed === oldVal) return;
+                mallTypes[idx] = trimmed;
+                transactions.forEach(t => { if (t.mallType === oldVal) t.mallType = trimmed; });
+                await commit();
+                renderModalMallList();
+                showMessage(`Mall type updated: ${trimmed}`, "success");
             };
         });
-        document.querySelectorAll('.delete-modal-mall').forEach(btn => {
-            btn.onclick = (e) => {
+        container.querySelectorAll(".delete-modal-mall").forEach(btn => {
+            btn.onclick = async (e) => {
                 e.stopPropagation();
-                const mallVal = btn.getAttribute('data-mall');
-                if (confirm(`Remove mall type "${mallVal}"?`)) {
-                    mallTypes = mallTypes.filter(m => m !== mallVal);
-                    transactions.forEach(t => { if (t.mallType === mallVal) t.mallType = ""; });
-                    renderUI();
-                    showMessage(`Removed "${mallVal}"`, "success");
-                }
+                const idx = Number(btn.getAttribute("data-index"));
+                const mallVal = mallTypes[idx];
+                const ok = await confirmDialog("Remove mall type", `Remove "${mallVal}"? Transactions using it will show no mall type.`, "Remove");
+                if (!ok) return;
+                mallTypes = mallTypes.filter((_, i) => i !== idx);
+                transactions.forEach(t => { if (t.mallType === mallVal) t.mallType = ""; });
+                await commit();
+                renderModalMallList();
+                showMessage(`Removed "${mallVal}"`, "success");
             };
         });
     }
@@ -837,19 +858,16 @@
         document.getElementById("newMallName").value = "";
     }
 
-    function addMallFromModal() {
-        const newMall = document.getElementById("newMallName").value.trim();
-        if (newMall && !mallTypes.includes(newMall)) {
-            mallTypes.push(newMall);
-            renderUI();
-            renderModalMallList();
-            document.getElementById("newMallName").value = "";
-            showMessage(`Added "${newMall}" to mall types`, "success");
-        } else if (newMall && mallTypes.includes(newMall)) {
-            showMessage("Mall type already exists!", "error");
-        } else if (newMall === "") {
-            showMessage("Please enter a mall type name", "error");
-        }
+    async function addMallFromModal() {
+        const input = document.getElementById("newMallName");
+        const newMall = input.value.trim();
+        if (!newMall) { showMessage("Please enter a mall type name", "error"); return; }
+        if (mallTypes.includes(newMall)) { showMessage("Mall type already exists!", "error"); return; }
+        mallTypes.push(newMall);
+        await commit();
+        renderModalMallList();
+        input.value = "";
+        showMessage(`Added "${newMall}" to mall types`, "success");
     }
 
     function getStatusCategory(statusText) {
@@ -868,6 +886,7 @@
         currentFilters.mallType = document.getElementById("filterMallType").value.toLowerCase();
         renderFilteredTable();
         updateFilterStats();
+        updateRecordCount();
     }
 
     function clearFilters() {
@@ -880,21 +899,24 @@
         currentFilters = { status: "ALL", tag: "ALL", remarks: "", fromCode: "", toCode: "", mallType: "" };
         renderFilteredTable();
         updateFilterStats();
+        updateRecordCount();
         showMessage("All filters cleared", "success");
     }
 
     function updateFilterStats() {
         const filtered = getFilteredTransactions();
         const statsDiv = document.getElementById("filterStats");
-        if (filtered.length === transactions.length) {
-            statsDiv.innerHTML = `📊 Showing all ${transactions.length} records`;
+        if (!transactions.length) {
+            statsDiv.textContent = "No records yet";
+        } else if (filtered.length === transactions.length) {
+            statsDiv.textContent = `📊 Showing all ${transactions.length} records`;
         } else {
-            statsDiv.innerHTML = `🔍 Showing ${filtered.length} of ${transactions.length} records (${Math.round(filtered.length/transactions.length*100)}%)`;
+            statsDiv.textContent = `🔍 Showing ${filtered.length} of ${transactions.length} records (${Math.round(filtered.length / transactions.length * 100)}%)`;
         }
     }
 
     function getFilteredTransactions() {
-        let filtered = [...transactions];
+        let filtered = transactions;
         if (currentFilters.status !== "ALL") filtered = filtered.filter(t => getStatusCategory(t.statusText) === currentFilters.status);
         if (currentFilters.tag !== "ALL") filtered = filtered.filter(t => t.tag === currentFilters.tag);
         if (currentFilters.remarks) filtered = filtered.filter(t => t.remarks.toLowerCase().includes(currentFilters.remarks));
@@ -907,15 +929,15 @@
     function renderFilteredTable() {
         const tbody = document.getElementById("tableBody");
         const filtered = getFilteredTransactions();
-        if (!filtered.length) { 
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">📭 No transactions match the filters</td></tr>'; 
-            return; 
+        if (!filtered.length) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">📭 ${transactions.length ? "No transactions match the filters" : "No transactions yet — execute one above to get started"}</td></tr>`;
+            return;
         }
         let html = "";
         for (const t of filtered) {
-            let statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText?.includes("DUPLICATE") ? "status-warning" : "status-allowed");
+            const statusClass = t.allowedFlag === false ? "status-denied" : (t.statusText.includes("DUPLICATE") ? "status-warning" : "status-allowed");
             const tagDisplay = t.tag === "new_license" ? "✨ NEW LICENSE" : "🔄 TRANSFER";
-            const fromUsedDisplay = t.tag === "transfer" ? (t.fromUsedBefore || "NO") : "—";
+            const fromUsedDisplay = t.fromUsedBefore || "NO";
             const mallDisplay = t.mallType ? escapeHtml(t.mallType) : "—";
             html += `<tr>
                 <td><code><strong>${escapeHtml(t.fromCode)}</strong></code></td>
@@ -925,44 +947,47 @@
                 <td style="font-size:0.7rem;">${fromUsedDisplay}</td>
                 <td style="font-size:0.7rem;">${escapeHtml(t.timestamp)}</td>
                 <td><span class="status-badge ${statusClass}">${escapeHtml(t.statusText)}</span></td>
-                <td>${escapeHtml(t.remarks) || '<em style="color:#6c7a96;">—</em>'}</td>
+                <td>${t.remarks ? escapeHtml(t.remarks) : '<em style="color:#6c7a96;">—</em>'}</td>
                 <td>
-                    <button class="small secondary" onclick="editRemarks('${t.id}')">✏️</button>
-                    <button class="small danger" onclick="deleteWithPassword('${t.id}')">🗑️</button>
+                    <button class="small secondary" data-action="edit-remarks" data-id="${escapeAttr(t.id)}">✏️</button>
+                    <button class="small danger" data-action="delete" data-id="${escapeAttr(t.id)}">🗑️</button>
                 </td>
             </tr>`;
         }
         tbody.innerHTML = html;
+
+        tbody.querySelectorAll('[data-action="edit-remarks"]').forEach(btn => {
+            btn.onclick = () => editRemarks(btn.getAttribute("data-id"));
+        });
+        tbody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+            btn.onclick = () => deleteWithPassword(btn.getAttribute("data-id"));
+        });
     }
 
     function updateRecordCount() {
         const filtered = getFilteredTransactions();
         const recordSpan = document.getElementById("recordCount");
-        if (filtered.length === transactions.length) {
-            recordSpan.textContent = transactions.length + " records";
-        } else {
-            recordSpan.textContent = filtered.length + " / " + transactions.length + " records";
-        }
+        recordSpan.textContent = filtered.length === transactions.length
+            ? transactions.length + " records"
+            : filtered.length + " / " + transactions.length + " records";
     }
 
     function updateStats() {
-        const total = transactions.length;
-        const usedFromCount = getUsedFromTerminals().size;
-        const newLicensesUsed = transactions.filter(t => t.tag === "new_license" && t.allowedFlag === true).length;
-        document.getElementById("statTotal").textContent = total;
-        document.getElementById("statFromCount").textContent = usedFromCount;
-        document.getElementById("statLicensesUsed").textContent = newLicensesUsed;
+        document.getElementById("statTotal").textContent = transactions.length;
+        document.getElementById("statFromCount").textContent = getUsedFromTerminals().size;
+        document.getElementById("statLicensesUsed").textContent =
+            transactions.filter(t => t.tag === "new_license" && t.allowedFlag === true).length;
     }
 
     function updateLicenseDisplay() {
         document.getElementById("licenseCount").textContent = availableLicenses;
         const licenseStatus = document.getElementById("licenseStatus");
-        if (availableLicenses <= 10 && availableLicenses > 0) {
-            licenseStatus.innerHTML = "⚠️ LOW LICENSES! Only " + availableLicenses + " NEW licenses left";
-            licenseStatus.style.color = "#ffaa88";
-        } else if (availableLicenses <= 0) {
+        if (availableLicenses <= 0) {
             licenseStatus.innerHTML = "❌ NO NEW LICENSES LEFT!";
             licenseStatus.style.color = "#ff6b6b";
+        } else if (availableLicenses <= 10) {
+            licenseStatus.innerHTML = "⚠️ LOW LICENSES! Only " + availableLicenses + " NEW licenses left";
+            licenseStatus.style.color = "#ffaa88";
         } else {
             licenseStatus.innerHTML = "✅ " + availableLicenses + " NEW licenses available";
             licenseStatus.style.color = "#8e9baf";
@@ -975,55 +1000,45 @@
         return usedFrom;
     }
 
-    function isFromTerminalUsed(fromCode, excludeId = null) {
-        return transactions.some(t => t.fromCode === fromCode && t.tag === "transfer" && (excludeId === null || t.id !== excludeId));
+    function isFromTerminalUsed(fromCode) {
+        return transactions.some(t => t.fromCode === fromCode && t.tag === "transfer");
     }
 
-    // FIXED: Main transaction function with proper license deduction
+    // ---------- CORE TRANSACTION LOGIC (mutates state only — caller commits) ----------
+    // Both FROM and TO are always required. Any terminal code that has appeared in the
+    // ledger before — as a FROM or a TO, under either tag — can be used as a FROM in a
+    // TRANSFER exactly once. isFromTerminalUsed() is what enforces the "once only" rule.
     function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
-        // Validate inputs
-        const fNorm = fromCode.trim();
-        const tNorm = toCode.trim();
-        
+        const fNorm = (fromCode || "").trim();
+        const tNorm = (toCode || "").trim();
+
         if (!fNorm || !tNorm) {
             if (showMsg) showMessage("❌ Please fill both FROM and TO fields", "error");
             return { allowed: false, message: "Empty fields" };
         }
-        
         if (fNorm === tNorm) {
             if (showMsg) showMessage("❌ FROM and TO cannot be the same", "error");
             return { allowed: false, message: "Same code" };
         }
-        
-        // Check if FROM terminal was used before in TRANSFER
+
         const fromUsedBefore = isFromTerminalUsed(fNorm);
         const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
-        
-        let allowed = false;
-        let statusLabel = "";
-        let message = "";
-        let licenseConsumed = 0;
-        
-        // Handle NEW LICENSE
+
+        let allowed = false, statusLabel = "", message = "", licenseConsumed = 0;
+
         if (tag === "new_license") {
-            // Check if licenses are available
             if (availableLicenses <= 0) {
                 if (showMsg) showMessage("❌ NO NEW LICENSES AVAILABLE! Please add more licenses.", "error");
                 return { allowed: false, message: "No licenses" };
             }
-            
-            // Deduct license
             availableLicenses--;
             licenseConsumed = 1;
             allowed = true;
             statusLabel = duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)";
             message = duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)";
-            
-        } 
-        // Handle TRANSFER
-        else if (tag === "transfer") {
+        } else if (tag === "transfer") {
             if (fromUsedBefore) {
-                if (showMsg) showMessage(`❌ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer.`, "error");
+                if (showMsg) showMessage(`❌ TRANSFER REJECTED: FROM terminal "${fNorm}" has already been transferred once.`, "error");
                 return { allowed: false, message: "FROM already used" };
             }
             allowed = true;
@@ -1033,245 +1048,278 @@
             if (showMsg) showMessage("❌ Invalid license tag", "error");
             return { allowed: false, message: "Invalid tag" };
         }
-        
-        // Create transaction record
-        const newRecord = {
-            id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
+
+        transactions.unshift({
+            id: generateId(),
             fromCode: fNorm,
             toCode: tNorm,
             mallType: mallType || "",
-            tag: tag,
-            fromUsedBefore: tag === "transfer" ? (fromUsedBefore ? "YES" : "NO") : "N/A",
+            tag,
+            fromUsedBefore: fromUsedBefore ? "YES" : "NO",
             timestamp: new Date().toLocaleString(),
             statusText: statusLabel,
             allowedFlag: allowed,
             remarks: "",
-            licenseConsumed: licenseConsumed
-        };
-        
-        transactions.unshift(newRecord);
-        
+            licenseConsumed
+        });
+
         if (showMsg) {
             let msg = `✔️ ${message}`;
             if (tag === "new_license") msg += ` (${availableLicenses} NEW licenses left)`;
             showMessage(msg, "success");
         }
-        
-        renderUI();
         return { allowed, message };
     }
 
-    function deleteTransaction(id) {
+    async function deleteTransaction(id) {
         const t = transactions.find(x => x.id === id);
-        if (t && t.allowedFlag && t.tag === "new_license") {
-            availableLicenses++; // Refund the license
-        }
+        if (t && t.allowedFlag && t.tag === "new_license") availableLicenses++; // refund
         transactions = transactions.filter(x => x.id !== id);
-        renderUI();
+        await commit();
         showMessage("✅ Transaction deleted (license refunded if applicable)", "success");
     }
 
-    function updateRemarks(id, remarks) {
+    async function updateRemarks(id, remarks) {
         const t = transactions.find(x => x.id === id);
-        if (t) { t.remarks = remarks; renderUI(); showMessage("✅ Remarks saved", "success"); }
+        if (!t) return;
+        t.remarks = remarks;
+        await commit();
+        showMessage("✅ Remarks saved", "success");
     }
 
-    // BACKUP FUNCTIONS
-    function fullBackup() {
-        const backupData = { 
-            version: "1.0", 
-            backupDate: new Date().toISOString(), 
-            transactions: transactions, 
-            availableLicenses: availableLicenses, 
-            mallTypes: mallTypes 
-        };
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `terminal_backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showMessage("✅ Full backup created!", "success");
-    }
-
-    function fullRestore(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const backupData = JSON.parse(e.target.result);
-                if (confirm(`⚠️ This will REPLACE all current data!\n\nRestore ${backupData.transactions?.length || 0} transactions?\n\nProceed?`)) {
-                    transactions = backupData.transactions || [];
-                    availableLicenses = backupData.availableLicenses !== undefined ? backupData.availableLicenses : 100;
-                    mallTypes = backupData.mallTypes || [...DEFAULT_MALLS];
-                    transactions.forEach(t => { 
-                        if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); 
-                        if (!t.remarks) t.remarks = ""; 
-                        if (!t.mallType) t.mallType = ""; 
-                    });
-                    renderUI();
-                    showMessage(`✅ Restore successful! ${transactions.length} transactions restored.`, "success");
-                }
-            } catch(error) { 
-                showMessage("❌ Invalid backup file", "error"); 
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function exportToJSON() {
-        const data = { transactions, availableLicenses, mallTypes, exportDate: new Date().toISOString() };
+    // ---------- BACKUP / EXPORT / IMPORT ----------
+    function downloadJSON(data, filenamePrefix) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = `terminal_export_${new Date().toISOString().slice(0,19)}.json`;
+        a.download = `${filenamePrefix}_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`;
         a.click();
         URL.revokeObjectURL(a.href);
+    }
+
+    function fullBackup() {
+        downloadJSON({ version: "1.0", backupDate: new Date().toISOString(), transactions, availableLicenses, mallTypes }, "terminal_backup");
+        showMessage("✅ Full backup created!", "success");
+    }
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = () => reject(new Error("File read failed"));
+            reader.readAsText(file);
+        });
+    }
+
+    async function fullRestore(file) {
+        let backupData;
+        try {
+            backupData = JSON.parse(await readFileAsText(file));
+        } catch (e) {
+            showMessage("❌ Invalid backup file", "error");
+            return;
+        }
+        const count = backupData.transactions?.length || 0;
+        const ok = await confirmDialog("Restore from backup", `This replaces ALL current data with ${count} transactions from the backup file. This cannot be undone.`, "Restore");
+        if (!ok) return;
+
+        transactions = backupData.transactions || [];
+        availableLicenses = typeof backupData.availableLicenses === "number" ? backupData.availableLicenses : 100;
+        mallTypes = backupData.mallTypes || [...DEFAULT_MALLS];
+        transactions.forEach(normalizeTransaction);
+        await commit();
+        showMessage(`✅ Restore successful! ${transactions.length} transactions restored.`, "success");
+    }
+
+    function exportToJSON() {
+        downloadJSON({ transactions, availableLicenses, mallTypes, exportDate: new Date().toISOString() }, "terminal_export");
         showMessage("✅ Data exported!", "success");
     }
 
-    function importFromJSON(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                transactions = imported.transactions || (Array.isArray(imported) ? imported : []);
-                availableLicenses = imported.availableLicenses !== undefined ? imported.availableLicenses : 100;
-                mallTypes = imported.mallTypes || [...DEFAULT_MALLS];
-                transactions.forEach(t => { 
-                    if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6); 
-                    if (!t.mallType) t.mallType = ""; 
-                    if (!t.remarks) t.remarks = ""; 
-                });
-                renderUI();
-                showMessage(`✅ Imported ${transactions.length} records`, "success");
-            } catch(error) { 
-                showMessage("❌ Error parsing JSON", "error"); 
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function processBatchUpload(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            let batchData = [];
-            try {
-                if (file.name.endsWith('.json')) {
-                    const parsed = JSON.parse(e.target.result);
-                    batchData = parsed.transactions || (Array.isArray(parsed) ? parsed : []);
-                } else {
-                    const lines = e.target.result.split('\n');
-                    for (let i = 1; i < lines.length; i++) {
-                        if (lines[i].trim()) {
-                            const parts = lines[i].split(',');
-                            if (parts.length >= 3) {
-                                batchData.push({ 
-                                    from: parts[0].trim(), 
-                                    to: parts[1].trim(), 
-                                    mallType: parts[2]?.trim() || "", 
-                                    tag: (parts[3]?.trim() || parts[2]?.trim() || "transfer").toLowerCase() 
-                                });
-                            }
-                        }
-                    }
-                }
-            } catch(error) { 
-                showMessage("Error parsing file", "error"); 
-                return; 
-            }
-            
-            let successCount = 0;
-            for (const item of batchData) {
-                const tag = item.tag === "transfer" ? "transfer" : "new_license";
-                const result = addTransaction(item.from, item.to, item.mallType || "", tag, false);
-                if (result.allowed) successCount++;
-            }
-            renderUI();
-            showMessage(`✅ Batch: ${successCount} successful (${availableLicenses} NEW licenses left)`, "success");
-        };
-        reader.readAsText(file);
-    }
-
-    function resetDatabase() {
-        const password = prompt("Enter admin password to reset ALL data (admin123):");
-        if (password === ADMIN_PASSWORD) {
-            if (confirm("⚠️ WARNING: This will DELETE ALL DATA! Are you sure?")) {
-                resetToDefaults();
-                persistFullState();
-                renderUI();
-                showMessage("✅ Full system reset complete! 100 NEW licenses restored.", "success");
-            }
-        } else if (password !== null) {
-            showMessage("❌ Incorrect password!", "error");
+    async function importFromJSON(file) {
+        let imported;
+        try {
+            imported = JSON.parse(await readFileAsText(file));
+        } catch (e) {
+            showMessage("❌ Error parsing JSON", "error");
+            return;
         }
+        transactions = imported.transactions || (Array.isArray(imported) ? imported : []);
+        availableLicenses = typeof imported.availableLicenses === "number" ? imported.availableLicenses : 100;
+        mallTypes = imported.mallTypes || [...DEFAULT_MALLS];
+        transactions.forEach(normalizeTransaction);
+        await commit();
+        showMessage(`✅ Imported ${transactions.length} records`, "success");
     }
 
-    function editLicenseCount() {
-        const password = prompt("Enter admin password (admin123):");
-        if (password === ADMIN_PASSWORD) {
-            const newCount = prompt("Enter new number of NEW licenses available:", availableLicenses);
-            if (newCount !== null && !isNaN(parseInt(newCount))) {
-                availableLicenses = parseInt(newCount);
-                renderUI();
-                showMessage(`✅ License count updated to ${availableLicenses}`, "success");
-            } else if (newCount !== null) {
-                showMessage("❌ Invalid number!", "error");
+    function parseCsvBatch(text) {
+        const batch = [];
+        const lines = text.split("\n");
+        for (let i = 1; i < lines.length; i++) { // skip header row
+            if (!lines[i].trim()) continue;
+            const parts = lines[i].split(",");
+            if (parts.length < 2) continue;
+            batch.push({
+                from: parts[0]?.trim() || "",
+                to: parts[1]?.trim() || "",
+                mallType: parts[2]?.trim() || "",
+                tag: (parts[3]?.trim() || "transfer").toLowerCase() // tag defaults to "transfer", never falls back to the mallType column
+            });
+        }
+        return batch;
+    }
+
+    async function processBatchUpload(file) {
+        let batchData;
+        try {
+            const text = await readFileAsText(file);
+            if (file.name.endsWith(".json")) {
+                const parsed = JSON.parse(text);
+                batchData = parsed.transactions || (Array.isArray(parsed) ? parsed : []);
+            } else {
+                batchData = parseCsvBatch(text);
             }
-        } else if (password !== null) {
-            showMessage("❌ Incorrect password!", "error");
+        } catch (e) {
+            showMessage("❌ Error parsing file", "error");
+            return;
         }
+
+        let successCount = 0;
+        for (const item of batchData) {
+            const tag = item.tag === "transfer" ? "transfer" : "new_license";
+            const result = addTransaction(item.from, item.to, item.mallType || "", tag, false);
+            if (result.allowed) successCount++;
+        }
+        await commit(); // single save at the end, not per-row
+        showMessage(`✅ Batch: ${successCount}/${batchData.length} successful (${availableLicenses} NEW licenses left)`, "success");
     }
 
-    function editRemarks(id) { 
-        const remarks = prompt("Remarks:", transactions.find(t => t.id === id)?.remarks || ""); 
-        if (remarks !== null) updateRemarks(id, remarks); 
-    }
-    
-    function deleteWithPassword(id) { 
-        const password = prompt("Admin password (admin123):");
-        if (password === ADMIN_PASSWORD) {
-            deleteTransaction(id); 
-        } else if (password !== null) {
-            showMessage("❌ Incorrect password!", "error"); 
-        }
-    }
-    
-    function showMessage(msg, type) { 
-        const msgDiv = document.getElementById("messageArea"); 
-        msgDiv.style.display = "block"; 
-        msgDiv.textContent = msg; 
-        msgDiv.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`; 
-        setTimeout(() => msgDiv.style.display = "none", 4000); 
-    }
-    
-    function escapeHtml(str) { 
-        if (!str) return ""; 
-        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
-    }
-    
-    function escapeAttr(str) { 
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
+    // ---------- ADMIN ACTIONS ----------
+    async function requireAdmin(actionLabel) {
+        const pwd = await dialog({ title: "Admin verification", message: `Enter admin password to ${actionLabel}.`, inputType: "password", confirmText: "Verify" });
+        if (pwd === null) return false;
+        if (pwd !== ADMIN_PASSWORD) { showMessage("❌ Incorrect password!", "error"); return false; }
+        return true;
     }
 
-    // EVENT LISTENERS
-    document.getElementById("executeBtn")?.addEventListener("click", () => {
+    async function resetDatabase() {
+        if (!(await requireAdmin("reset the database"))) return;
+        const ok = await confirmDialog("Reset database", "This deletes ALL transactions and restores 100 NEW licenses. This cannot be undone.", "Reset everything");
+        if (!ok) return;
+        resetToDefaults();
+        await commit();
+        showMessage("✅ Full system reset complete! 100 NEW licenses restored.", "success");
+    }
+
+    async function editLicenseCount() {
+        if (!(await requireAdmin("edit the license count"))) return;
+        const newCount = await dialog({ title: "Edit license count", inputType: "number", defaultValue: String(availableLicenses), confirmText: "Save" });
+        if (newCount === null) return;
+        const parsed = parseInt(newCount, 10);
+        if (isNaN(parsed) || parsed < 0) { showMessage("❌ Invalid number!", "error"); return; }
+        availableLicenses = parsed;
+        await commit();
+        showMessage(`✅ License count updated to ${availableLicenses}`, "success");
+    }
+
+    async function editRemarks(id) {
+        const current = transactions.find(t => t.id === id)?.remarks || "";
+        const remarks = await dialog({ title: "Edit remarks", inputType: "text", defaultValue: current, confirmText: "Save" });
+        if (remarks !== null) await updateRemarks(id, remarks);
+    }
+
+    async function deleteWithPassword(id) {
+        if (!(await requireAdmin("delete this transaction"))) return;
+        await deleteTransaction(id);
+    }
+
+    // ---------- MESSAGES / ESCAPING ----------
+    let messageTimer = null;
+    function showMessage(msg, type) {
+        const msgDiv = document.getElementById("messageArea");
+        msgDiv.style.display = "block";
+        msgDiv.textContent = msg;
+        msgDiv.className = `alert ${type === "error" ? "error" : (type === "success" ? "success" : "")}`;
+        clearTimeout(messageTimer);
+        messageTimer = setTimeout(() => { msgDiv.style.display = "none"; }, 5000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
+    }
+
+    function escapeAttr(str) {
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ---------- GENERIC DIALOG (replaces alert/confirm/prompt) ----------
+    function dialog({ title, message = "", inputType = null, defaultValue = "", confirmText = "OK", danger = false }) {
+        return new Promise(resolve => {
+            const modal = document.getElementById("dialogModal");
+            const messageEl = document.getElementById("dialogMessage");
+            const input = document.getElementById("dialogInput");
+            const confirmBtn = document.getElementById("dialogConfirmBtn");
+            const cancelBtn = document.getElementById("dialogCancelBtn");
+            const closeBtn = document.getElementById("dialogClose");
+
+            document.getElementById("dialogTitle").textContent = title;
+            messageEl.textContent = message;
+            messageEl.style.display = message ? "block" : "none";
+
+            if (inputType) {
+                input.style.display = "block";
+                input.type = inputType;
+                input.value = defaultValue;
+            } else {
+                input.style.display = "none";
+            }
+
+            confirmBtn.textContent = confirmText;
+            confirmBtn.className = danger ? "danger" : "primary";
+            modal.style.display = "block";
+            if (inputType) setTimeout(() => input.focus(), 30);
+
+            function cleanup(result) {
+                modal.style.display = "none";
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                closeBtn.onclick = null;
+                input.onkeypress = null;
+                resolve(result);
+            }
+
+            confirmBtn.onclick = () => cleanup(inputType ? input.value : true);
+            cancelBtn.onclick = () => cleanup(null);
+            closeBtn.onclick = () => cleanup(null);
+            if (inputType) input.onkeypress = (e) => { if (e.key === "Enter") cleanup(input.value); };
+        });
+    }
+
+    async function confirmDialog(title, message, confirmText = "Confirm") {
+        return (await dialog({ title, message, confirmText, danger: true })) === true;
+    }
+
+    // ---------- WIRE UP EVENTS ----------
+    document.getElementById("executeBtn")?.addEventListener("click", async function () {
         const from = document.getElementById("fromCode").value;
         const to = document.getElementById("toCode").value;
         const mallType = document.getElementById("mallTypeSelect").value;
         const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
-        
-        if (!from || !to) {
-            showMessage("❌ Please fill FROM and TO fields", "error");
-            return;
+
+        if (!from || !to) { showMessage("❌ Please fill both FROM and TO fields", "error"); return; }
+        if (!tag) { showMessage("❌ Please select a license tag", "error"); return; }
+
+        const result = addTransaction(from, to, mallType, tag, true);
+        await commit();
+
+        if (result.allowed) {
+            document.getElementById("fromCode").value = "";
+            document.getElementById("toCode").value = "";
+            document.getElementById("mallTypeSelect").value = "";
         }
-        if (!tag) {
-            showMessage("❌ Please select a license tag", "error");
-            return;
-        }
-        
-        addTransaction(from, to, mallType, tag, true);
     });
-    
+
     document.getElementById("applyFiltersBtn")?.addEventListener("click", applyFilters);
     document.getElementById("clearFiltersBtn")?.addEventListener("click", clearFilters);
     document.getElementById("resetBtn")?.addEventListener("click", resetDatabase);
@@ -1282,21 +1330,22 @@
     document.getElementById("restoreFile")?.addEventListener("change", (e) => { if (e.target.files[0]) fullRestore(e.target.files[0]); e.target.value = ""; });
     document.getElementById("importBtn")?.addEventListener("click", () => document.getElementById("importFile").click());
     document.getElementById("importFile")?.addEventListener("change", (e) => { if (e.target.files[0]) importFromJSON(e.target.files[0]); e.target.value = ""; });
-    document.getElementById("uploadBtn")?.addEventListener("click", () => { const f = document.getElementById("uploadFile").files[0]; if (f) processBatchUpload(f); else showMessage("Select a file", "error"); });
+    document.getElementById("uploadBtn")?.addEventListener("click", () => {
+        const f = document.getElementById("uploadFile").files[0];
+        if (f) processBatchUpload(f); else showMessage("Select a file", "error");
+    });
     document.getElementById("manageMallTypesBtn")?.addEventListener("click", openMallModal);
     document.getElementById("addMallModalBtn")?.addEventListener("click", addMallFromModal);
     document.getElementById("closeModalBtn")?.addEventListener("click", closeMallModal);
-    document.querySelector(".close")?.addEventListener("click", closeMallModal);
-    window.onclick = function(event) { if (event.target === document.getElementById("mallModal")) closeMallModal(); };
-    
-    document.getElementById("newMallName")?.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") addMallFromModal();
+    document.getElementById("mallModalClose")?.addEventListener("click", closeMallModal);
+    document.getElementById("newMallName")?.addEventListener("keypress", (e) => { if (e.key === "Enter") addMallFromModal(); });
+
+    window.addEventListener("click", (event) => {
+        if (event.target === document.getElementById("mallModal")) closeMallModal();
     });
-    
-    window.editRemarks = editRemarks;
-    window.deleteWithPassword = deleteWithPassword;
-    
+
     loadData();
+})();
 </script>
 </body>
 </html>
