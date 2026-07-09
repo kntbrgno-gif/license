@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Fixed Execution</title>
+    <title>Terminal License Monitor · Fixed Storage</title>
     <style>
         * {
             box-sizing: border-box;
@@ -523,13 +523,36 @@
             color: #b3f0c0;
             margin: 0.5rem 0;
         }
+
+        .storage-status {
+            font-size: 0.7rem;
+            padding: 0.3rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
+            display: none;
+        }
+
+        .storage-status.saved {
+            display: block;
+            background: #1a3a2a;
+            color: #94ffb4;
+            border: 1px solid #2ecc71;
+        }
+
+        .storage-status.error {
+            display: block;
+            background: #3a1a1a;
+            color: #ff9e8f;
+            border: 1px solid #ff6b6b;
+        }
     </style>
 </head>
 <body>
 <div class="monitor-container">
     <div class="terminal-header">
-        <div class="title">⟡ LICENSE TRANSFER MONITOR · FIXED EXECUTION ⟡</div>
-        <div class="badge">NEW LICENSE deducts 1 | TRANSFER is free</div>
+        <div class="title">⟡ LICENSE TRANSFER MONITOR · FIXED STORAGE ⟡</div>
+        <div class="badge">Auto-save to localStorage | Reliable persistence</div>
     </div>
 
     <div class="grid-2col">
@@ -578,6 +601,9 @@
                 <button id="executeBtn" class="primary">⚡ EXECUTE TRANSFER</button>
                 <button id="resetBtn" class="danger">🗑️ RESET DATABASE</button>
             </div>
+
+            <!-- Storage Status -->
+            <div id="storageStatus" class="storage-status"></div>
 
             <!-- Stats -->
             <div class="stats">
@@ -729,29 +755,86 @@
     
     const ADMIN_PASSWORD = "admin123";
     const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
+    const STORAGE_KEY = "terminal_license_monitor";
 
+    // FIXED: Reliable storage function with error handling
     function persistFullState() {
-        localStorage.setItem("terminal_license_monitor", JSON.stringify({
-            transactions, availableLicenses, mallTypes
-        }));
+        try {
+            const dataToSave = {
+                transactions: transactions,
+                availableLicenses: availableLicenses,
+                mallTypes: mallTypes,
+                lastSaved: new Date().toISOString()
+            };
+            
+            const jsonData = JSON.stringify(dataToSave);
+            localStorage.setItem(STORAGE_KEY, jsonData);
+            
+            // Verify the save worked
+            const verifyData = localStorage.getItem(STORAGE_KEY);
+            if (verifyData) {
+                const parsed = JSON.parse(verifyData);
+                if (parsed.transactions.length === transactions.length && 
+                    parsed.availableLicenses === availableLicenses) {
+                    showStorageStatus("✅ Data saved to localStorage", "saved");
+                    return true;
+                }
+            }
+            showStorageStatus("⚠️ Data may not be saved correctly", "error");
+            return false;
+        } catch (e) {
+            console.error("Storage save error:", e);
+            showStorageStatus("❌ Failed to save data: " + e.message, "error");
+            return false;
+        }
     }
 
+    // Show storage status message
+    function showStorageStatus(message, type) {
+        const statusDiv = document.getElementById("storageStatus");
+        if (statusDiv) {
+            statusDiv.textContent = message;
+            statusDiv.className = "storage-status " + type;
+            statusDiv.style.display = "block";
+            setTimeout(() => {
+                statusDiv.style.display = "none";
+            }, 3000);
+        }
+    }
+
+    // FIXED: Load data with validation
     function loadData() {
-        const stored = localStorage.getItem("terminal_license_monitor");
-        if (stored) {
-            try {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
                 const parsed = JSON.parse(stored);
                 transactions = parsed.transactions || [];
                 availableLicenses = parsed.availableLicenses !== undefined ? parsed.availableLicenses : 100;
                 mallTypes = parsed.mallTypes || [...DEFAULT_MALLS];
+                
+                // Ensure each transaction has required fields
                 transactions.forEach(t => { 
                     if (!t.remarks) t.remarks = "";
                     if (!t.mallType) t.mallType = "";
                     if (!t.id) t.id = Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+                    if (!t.timestamp) t.timestamp = new Date().toLocaleString();
                 });
-            } catch(e) { resetToDefaults(); }
-        } else {
+                
+                console.log("Data loaded successfully:", {
+                    transactions: transactions.length,
+                    licenses: availableLicenses,
+                    mallTypes: mallTypes.length
+                });
+                
+                showStorageStatus("✅ Data loaded from localStorage", "saved");
+            } else {
+                console.log("No stored data found, using defaults");
+                resetToDefaults();
+            }
+        } catch (e) {
+            console.error("Load error:", e);
             resetToDefaults();
+            showStorageStatus("❌ Error loading data, using defaults", "error");
         }
         renderUI();
     }
@@ -768,6 +851,7 @@
         updateStats();
         updateLicenseDisplay();
         updateRecordCount();
+        // Save after every UI update
         persistFullState();
     }
 
@@ -979,7 +1063,7 @@
         return transactions.some(t => t.fromCode === fromCode && t.tag === "transfer" && (excludeId === null || t.id !== excludeId));
     }
 
-    // FIXED: Main transaction function with proper execution
+    // Main transaction function with storage
     function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
         console.log("=== EXECUTING TRANSACTION ===");
         console.log("From:", fromCode);
@@ -988,7 +1072,6 @@
         console.log("Tag:", tag);
         console.log("Available Licenses before:", availableLicenses);
         
-        // Validate inputs
         const fNorm = fromCode.trim();
         const tNorm = toCode.trim();
         
@@ -1002,7 +1085,6 @@
             return { allowed: false, message: "Same code" };
         }
         
-        // Check if FROM terminal was used before in TRANSFER
         const fromUsedBefore = isFromTerminalUsed(fNorm);
         const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
         
@@ -1011,23 +1093,17 @@
         let message = "";
         let licenseConsumed = 0;
         
-        // Handle NEW LICENSE
         if (tag === "new_license") {
-            // Check if licenses are available
             if (availableLicenses <= 0) {
                 if (showMsg) showMessage("❌ NO NEW LICENSES AVAILABLE! Please add more licenses.", "error");
                 return { allowed: false, message: "No licenses" };
             }
-            
-            // Deduct license
             availableLicenses--;
             licenseConsumed = 1;
             allowed = true;
             statusLabel = duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)";
             message = duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)";
-            
         } 
-        // Handle TRANSFER
         else if (tag === "transfer") {
             if (fromUsedBefore) {
                 if (showMsg) showMessage(`❌ TRANSFER REJECTED: FROM terminal "${fNorm}" already used in a transfer.`, "error");
@@ -1041,7 +1117,6 @@
             return { allowed: false, message: "Invalid tag" };
         }
         
-        // Create transaction record
         const newRecord = {
             id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
             fromCode: fNorm,
@@ -1062,29 +1137,39 @@
         console.log("Available Licenses after:", availableLicenses);
         console.log("Total transactions:", transactions.length);
         
+        // Force save immediately
+        const saved = persistFullState();
+        
         if (showMsg) {
             let msg = `✔️ ${message}`;
             if (tag === "new_license") msg += ` (${availableLicenses} NEW licenses left)`;
+            if (saved) msg += " 💾 Saved!";
             showMessage(msg, "success");
         }
         
         renderUI();
-        return { allowed, message };
+        return { allowed, message, saved };
     }
 
     function deleteTransaction(id) {
         const t = transactions.find(x => x.id === id);
         if (t && t.allowedFlag && t.tag === "new_license") {
-            availableLicenses++; // Refund the license
+            availableLicenses++;
         }
         transactions = transactions.filter(x => x.id !== id);
+        persistFullState();
         renderUI();
         showMessage("✅ Transaction deleted (license refunded if applicable)", "success");
     }
 
     function updateRemarks(id, remarks) {
         const t = transactions.find(x => x.id === id);
-        if (t) { t.remarks = remarks; renderUI(); showMessage("✅ Remarks saved", "success"); }
+        if (t) { 
+            t.remarks = remarks; 
+            persistFullState();
+            renderUI(); 
+            showMessage("✅ Remarks saved", "success"); 
+        }
     }
 
     // BACKUP FUNCTIONS
@@ -1119,6 +1204,7 @@
                         if (!t.remarks) t.remarks = ""; 
                         if (!t.mallType) t.mallType = ""; 
                     });
+                    persistFullState();
                     renderUI();
                     showMessage(`✅ Restore successful! ${transactions.length} transactions restored.`, "success");
                 }
@@ -1153,6 +1239,7 @@
                     if (!t.mallType) t.mallType = ""; 
                     if (!t.remarks) t.remarks = ""; 
                 });
+                persistFullState();
                 renderUI();
                 showMessage(`✅ Imported ${transactions.length} records`, "success");
             } catch(error) { 
@@ -1197,6 +1284,7 @@
                 const result = addTransaction(item.from, item.to, item.mallType || "", tag, false);
                 if (result.allowed) successCount++;
             }
+            persistFullState();
             renderUI();
             showMessage(`✅ Batch: ${successCount} successful (${availableLicenses} NEW licenses left)`, "success");
         };
@@ -1223,6 +1311,7 @@
             const newCount = prompt("Enter new number of NEW licenses available:", availableLicenses);
             if (newCount !== null && !isNaN(parseInt(newCount))) {
                 availableLicenses = parseInt(newCount);
+                persistFullState();
                 renderUI();
                 showMessage(`✅ License count updated to ${availableLicenses}`, "success");
             } else if (newCount !== null) {
@@ -1264,7 +1353,7 @@
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
     }
 
-    // FIXED: Execute button with proper logging
+    // EXECUTE BUTTON
     document.getElementById("executeBtn")?.addEventListener("click", function() {
         console.log("=== EXECUTE BUTTON CLICKED ===");
         
@@ -1287,11 +1376,9 @@
             return;
         }
         
-        // Execute the transaction
         const result = addTransaction(from, to, mallType, tag, true);
         
         if (result.allowed) {
-            // Clear fields only on success
             document.getElementById("fromCode").value = "";
             document.getElementById("toCode").value = "";
             document.getElementById("mallTypeSelect").value = "";
@@ -1322,6 +1409,7 @@
     window.editRemarks = editRemarks;
     window.deleteWithPassword = deleteWithPassword;
     
+    // Load data on startup
     loadData();
 </script>
 </body>
