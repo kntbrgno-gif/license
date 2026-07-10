@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Terminal License Monitor · Correct License Logic</title>
+    <title>Terminal License Monitor · Correct Logic</title>
     <style>
         * {
             box-sizing: border-box;
@@ -571,13 +571,25 @@
             font-size: 0.6rem;
             margin-left: 0.3rem;
         }
+
+        .field-required {
+            color: #ff6b6b;
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+        }
+
+        .field-optional {
+            color: #8aa9d6;
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+        }
     </style>
 </head>
 <body>
 <div class="monitor-container">
     <div class="terminal-header">
         <div class="title">⟡ LICENSE TRANSFER MONITOR · CORRECT LOGIC ⟡</div>
-        <div class="badge">NEW LICENSE = always allowed | TRANSFER = only once per FROM</div>
+        <div class="badge">NEW LICENSE = only FROM required | TRANSFER = FROM + TO required</div>
     </div>
 
     <div class="grid-2col">
@@ -592,15 +604,16 @@
 
             <!-- FROM Terminal -->
             <div class="form-group">
-                <label>📡 FROM TERMINAL CODE</label>
+                <label>📡 FROM TERMINAL CODE <span style="color:#ff6b6b;">*</span></label>
                 <input type="text" id="fromCode" class="terminal-input" placeholder="TERM-XXXX-A1B2">
                 <div id="fromStatus" style="font-size:0.7rem; margin-top:0.3rem; color:#8aa9d6;"></div>
             </div>
             
-            <!-- TO Terminal -->
+            <!-- TO Terminal (optional for NEW LICENSE, required for TRANSFER) -->
             <div class="form-group">
-                <label>🎯 TO TERMINAL CODE</label>
+                <label>🎯 TO TERMINAL CODE <span id="toRequired" style="color:#ff6b6b;">*</span></label>
                 <input type="text" id="toCode" class="terminal-input" placeholder="e.g., TERM-YYYY-C3D4">
+                <div id="toStatus" style="font-size:0.7rem; margin-top:0.3rem; color:#8aa9d6;"></div>
             </div>
 
             <!-- MALL TYPE -->
@@ -619,12 +632,12 @@
                 <label>🏷️ LICENSE ACTION TAG</label>
                 <div class="radio-group">
                     <label><input type="radio" name="licenseTag" value="new_license" checked> ✨ NEW LICENSE (Uses 1 license)</label>
-                    <label><input type="radio" name="licenseTag" value="transfer"> 🔄 TRANSFER (Free, but FROM can only be used once)</label>
+                    <label><input type="radio" name="licenseTag" value="transfer"> 🔄 TRANSFER (Free, requires FROM + TO)</label>
                 </div>
             </div>
 
             <div class="button-group">
-                <button id="executeBtn" class="primary">⚡ EXECUTE TRANSFER</button>
+                <button id="executeBtn" class="primary">⚡ EXECUTE</button>
                 <button id="resetBtn" class="danger">🗑️ RESET DATABASE</button>
             </div>
 
@@ -677,9 +690,8 @@
             <div id="messageArea" class="alert" style="display: none;"></div>
             <div class="note">
                 ⚠️ <strong>RULES:</strong><br>
-                • <strong>NEW LICENSE</strong> → Always allowed, consumes 1 license<br>
-                • <strong>TRANSFER</strong> → Free, but FROM terminal can only be used ONCE for TRANSFER<br>
-                • After a FROM is used in TRANSFER, it can still be used with NEW LICENSE
+                • <strong>NEW LICENSE</strong> → Only FROM required, consumes 1 license<br>
+                • <strong>TRANSFER</strong> → FROM + TO required, free but FROM can only be used ONCE
             </div>
         </div>
 
@@ -796,30 +808,10 @@
                 lastSaved: new Date().toISOString()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-            const verifyData = localStorage.getItem(STORAGE_KEY);
-            if (verifyData) {
-                const parsed = JSON.parse(verifyData);
-                if (parsed.transactions.length === transactions.length && 
-                    parsed.availableLicenses === availableLicenses) {
-                    showStorageStatus("✅ Data saved", "saved");
-                    return true;
-                }
-            }
-            return false;
+            return true;
         } catch (e) {
             console.error("Storage save error:", e);
-            showStorageStatus("❌ Failed to save data", "error");
             return false;
-        }
-    }
-
-    function showStorageStatus(message, type) {
-        const statusDiv = document.getElementById("storageStatus");
-        if (statusDiv) {
-            statusDiv.textContent = message;
-            statusDiv.className = "storage-status " + type;
-            statusDiv.style.display = "block";
-            setTimeout(() => { statusDiv.style.display = "none"; }, 3000);
         }
     }
 
@@ -860,7 +852,29 @@
         updateLicenseDisplay();
         updateRecordCount();
         checkFromStatus();
+        updateFieldRequirements();
         persistFullState();
+    }
+
+    function updateFieldRequirements() {
+        const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
+        const toRequired = document.getElementById("toRequired");
+        const toStatus = document.getElementById("toStatus");
+        const toInput = document.getElementById("toCode");
+        
+        if (tag === "new_license") {
+            toRequired.textContent = "(Optional)";
+            toRequired.style.color = "#8aa9d6";
+            toStatus.innerHTML = "💡 TO is optional for NEW LICENSE";
+            toStatus.style.color = "#8aa9d6";
+            toInput.placeholder = "(Optional) e.g., TERM-YYYY-C3D4";
+        } else {
+            toRequired.textContent = "*";
+            toRequired.style.color = "#ff6b6b";
+            toStatus.innerHTML = "⚠️ TO is required for TRANSFER";
+            toStatus.style.color = "#ffaa88";
+            toInput.placeholder = "e.g., TERM-YYYY-C3D4 (Required)";
+        }
     }
 
     function checkFromStatus() {
@@ -1095,7 +1109,7 @@
         return usedFrom;
     }
 
-    // CORRECTED: Main transaction function with proper logic
+    // CORRECTED: Main transaction function with proper field requirements
     function addTransaction(fromCode, toCode, mallType, tag, showMsg = true) {
         console.log("=== EXECUTING TRANSACTION ===");
         console.log("From:", fromCode);
@@ -1107,26 +1121,37 @@
         const fNorm = fromCode.trim();
         const tNorm = toCode.trim();
         
-        if (!fNorm || !tNorm) {
-            if (showMsg) showMessage("❌ Please fill both FROM and TO fields", "error");
-            return { allowed: false, message: "Empty fields" };
+        // Validate FROM is always required
+        if (!fNorm) {
+            if (showMsg) showMessage("❌ FROM TERMINAL is required for all operations", "error");
+            return { allowed: false, message: "FROM required" };
         }
         
-        if (fNorm === tNorm) {
-            if (showMsg) showMessage("❌ FROM and TO cannot be the same", "error");
+        // Validate TO based on tag type
+        if (tag === "transfer" && !tNorm) {
+            if (showMsg) showMessage("❌ TO TERMINAL is required for TRANSFER", "error");
+            return { allowed: false, message: "TO required for transfer" };
+        }
+        
+        if (fNorm === tNorm && tag === "transfer") {
+            if (showMsg) showMessage("❌ FROM and TO cannot be the same for TRANSFER", "error");
             return { allowed: false, message: "Same code" };
         }
         
         // Check if FROM has been used in a TRANSFER before
         const fromUsedInTransfer = isFromUsedInTransfer(fNorm);
-        const duplicateExists = transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag);
+        
+        // For duplicate check, only check if both FROM and TO exist
+        const duplicateExists = tag === "transfer" ? 
+            transactions.some(t => t.fromCode === fNorm && t.toCode === tNorm && t.tag === tag) :
+            transactions.some(t => t.fromCode === fNorm && t.tag === tag);
         
         let allowed = false;
         let statusLabel = "";
         let message = "";
         let licenseConsumed = 0;
         
-        // NEW LICENSE: Always allowed (consumes license)
+        // NEW LICENSE: Always allowed (consumes license), only FROM required
         if (tag === "new_license") {
             if (availableLicenses <= 0) {
                 if (showMsg) showMessage("❌ NO NEW LICENSES AVAILABLE! Please add more licenses.", "error");
@@ -1135,10 +1160,18 @@
             availableLicenses--;
             licenseConsumed = 1;
             allowed = true;
-            statusLabel = duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)";
-            message = duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)";
+            
+            // Check if this FROM already has a NEW LICENSE
+            const existingNewLicense = transactions.some(t => t.fromCode === fNorm && t.tag === "new_license");
+            if (existingNewLicense) {
+                statusLabel = "ℹ️ INFO (NEW LICENSE - Duplicate)";
+                message = `ℹ️ NEW LICENSE already exists for "${fNorm}", but another license was issued`;
+            } else {
+                statusLabel = duplicateExists ? "⚠️ DUPLICATE (NEW LICENSE)" : "✓ ALLOWED (NEW LICENSE)";
+                message = duplicateExists ? "⚠️ Duplicate, but NEW LICENSE approved" : "✅ NEW LICENSE approved (1 license used)";
+            }
         } 
-        // TRANSFER: Only allowed if FROM hasn't been used in a TRANSFER before
+        // TRANSFER: Requires FROM and TO, FROM can only be used once
         else if (tag === "transfer") {
             if (fromUsedInTransfer) {
                 if (showMsg) {
@@ -1161,7 +1194,7 @@
         const newRecord = {
             id: Date.now() + "-" + Math.random().toString(36).substr(2, 6),
             fromCode: fNorm,
-            toCode: tNorm,
+            toCode: tNorm || "",
             mallType: mallType || "",
             tag: tag,
             fromUsedBefore: tag === "transfer" ? (fromUsedInTransfer ? "YES" : "NO") : "N/A",
@@ -1301,12 +1334,12 @@
                     for (let i = 1; i < lines.length; i++) {
                         if (lines[i].trim()) {
                             const parts = lines[i].split(',');
-                            if (parts.length >= 3) {
+                            if (parts.length >= 2) {
                                 batchData.push({ 
                                     from: parts[0].trim(), 
-                                    to: parts[1].trim(), 
+                                    to: parts[1]?.trim() || "", 
                                     mallType: parts[2]?.trim() || "", 
-                                    tag: (parts[3]?.trim() || parts[2]?.trim() || "transfer").toLowerCase() 
+                                    tag: (parts[3]?.trim() || "transfer").toLowerCase() 
                                 });
                             }
                         }
@@ -1392,6 +1425,13 @@
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
     }
 
+    // Radio button change to update field requirements
+    document.querySelectorAll('input[name="licenseTag"]').forEach(radio => {
+        radio.addEventListener("change", function() {
+            updateFieldRequirements();
+        });
+    });
+
     // EXECUTE BUTTON
     document.getElementById("executeBtn")?.addEventListener("click", function() {
         const from = document.getElementById("fromCode").value;
@@ -1399,10 +1439,6 @@
         const mallType = document.getElementById("mallTypeSelect").value;
         const tag = document.querySelector('input[name="licenseTag"]:checked')?.value;
         
-        if (!from || !to) {
-            showMessage("❌ Please fill FROM and TO fields", "error");
-            return;
-        }
         if (!tag) {
             showMessage("❌ Please select a license tag", "error");
             return;
