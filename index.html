@@ -796,7 +796,7 @@
     };
     
     const ADMIN_PASSWORD = "admin123";
-    const DEFAULT_MALLS = ["MALL-PLAZA", "MALL-CENTRAL", "MALL-OUTLET", "MALL-FOODCT", "MALL-FASHION"];
+    const DEFAULT_MALLS = ["MALL-OUTLET"];
     const STORAGE_KEY = "terminal_license_monitor";
 
     function persistFullState() {
@@ -1364,7 +1364,7 @@
     }
 
     function resetDatabase() {
-        const password = prompt("Enter admin password (admin123):");
+        const password = prompt("Enter admin password:");
         if (password === ADMIN_PASSWORD) {
             if (confirm("⚠️ WARNING: This will DELETE ALL DATA! Are you sure?")) {
                 resetToDefaults();
@@ -1378,7 +1378,7 @@
     }
 
     function editLicenseCount() {
-        const password = prompt("Enter admin password (admin123):");
+        const password = prompt("Enter admin password:");
         if (password === ADMIN_PASSWORD) {
             const newCount = prompt("Enter new number of NEW licenses available:", availableLicenses);
             if (newCount !== null && !isNaN(parseInt(newCount))) {
@@ -1400,7 +1400,7 @@
     }
     
     function deleteWithPassword(id) { 
-        const password = prompt("Admin password (admin123):");
+        const password = prompt("Admin password:");
         if (password === ADMIN_PASSWORD) {
             deleteTransaction(id); 
         } else if (password !== null) {
